@@ -7,3 +7,9 @@ class Student {
         std::string name;
         int maxHours;
 };
+
+class Discipline {
+    private:
+        std::string name;
+        std::string controlFormat;
+};
