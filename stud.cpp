@@ -11,6 +11,5 @@ class Student {
 class Discipline {
     private:
         std::string name;
-        name = concept
-        std::string cOntrolFormat;
+        std::string controlFormat;
 };
