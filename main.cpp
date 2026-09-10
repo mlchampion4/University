@@ -4,86 +4,96 @@
 #include <vector>
 #include <string>
 #include <locale>
+#include <sstream>
 #include "faculty.h"
 #include "department.h"
 #include "student.h"
 #include "teacher.h"
 #include "subject.h"
 
+using namespace std;
+
+void printMenu() {
+    cout << "\n========== МЕНЮ ==========\n";
+    cout << "1. Показать информацию о факультете\n";
+    cout << "2. Показать кафедры\n";
+    cout << "3. Показать студентов\n";
+    cout << "4. Изменить данные студента\n";
+    cout << "5. Изменить данные кафедры\n";
+    cout << "6. Поставить занятие с преподавателем\n";
+    cout << "0. Выход\n";
+    cout << "===========================\n";
+}
+
+int inputInt(string_view message) {
+    string input;
+    int number;
+    char extra;
+
+    while (true) {
+        cout << message.data();
+        getline(cin, input);
+
+        if (stringstream ss(input); ss >> number && !(ss >> extra)) {
+            return number;
+        }
+
+        cout << "Ошибка! Введите целое число.\n";
+    }
+}
+
+
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
 
-    std::cout << "========== ТЕСТ 1: Создание факультета ==========" << std::endl;
-    auto faculty = std::make_shared<Faculty>("ФИТиП", 100);
-    std::cout << "Факультет: " << faculty->getFacultyName() << std::endl;
-    std::cout << "Макс. студентов: " << faculty->getMaxStudentsCount() << std::endl;
+    auto faculty = make_shared<Faculty>("ФКСиС", 150);
+    auto dept1 = make_shared<Department>("Кафедра ЭВМ", faculty);
+    auto dept2 = make_shared<Department>("Кафедра ВМ", faculty);
+    auto stud1 = make_shared<Student>("Драбудько Никита Геннадьевич", "550501", faculty, 50, 50);
+    auto stud2 = make_shared<Student>("Иванов Иван Иванович", "550502", faculty, 10, 10);
+    auto stud3 = make_shared<Student>("Петров Пётр Петрович", "550503", faculty, 2, 2);
+    auto subject = make_shared<Subject>("ПнаЯВУ", 4, CREDIT);
+    auto teacher = make_shared<Teacher>("Скиба Ирина Геннадьевна", faculty, dept1, subject);
+    int choice;
+    vector<shared_ptr<Student>> group = {stud1, stud2, stud3};
 
-    std::cout << "\n========== ТЕСТ 2: Создание кафедр ==========" << std::endl;
-    auto dept1 = std::make_shared<Department>("Кафедра ВТ", faculty);
-    auto dept2 = std::make_shared<Department>("Кафедра ИВТ", faculty);
+    dept1->addTeacher(teacher);
+
     faculty->addDepartment(dept1);
-    faculty->addDepartment(dept2);
-    std::cout << "Кафедры добавлены: " << dept1->getDepartmentName()
-              << ", " << dept2->getDepartmentName() << std::endl;
+    faculty->addStudent(stud1);
+    faculty->addStudent(stud2);
+    faculty->addStudent(stud3);
 
-    std::cout << "\n========== ТЕСТ 3: Создание предметов ==========" << std::endl;
-    auto subj1 = std::make_shared<Subject>("Программирование", 4, EXAM);
-    auto subj2 = std::make_shared<Subject>("Базы данных", 3, GRADEDCREDIT);
-    auto subj3 = std::make_shared<Subject>("Философия", 2, CREDIT);
-    subj1->printSubjectInformation();
-    std::cout << "---" << std::endl;
-    subj2->printSubjectInformation();
+    do {
+        printMenu();
+        choice = inputInt("Выберите пункт меню: ");
 
-    std::cout << "\n========== ТЕСТ 4: Создание преподавателей ==========" << std::endl;
-    auto teacher1 = std::make_shared<Teacher>("Иванов Иван Иванович", faculty, dept1, subj1);
-    auto teacher2 = std::make_shared<Teacher>("Петров Пётр Петрович", faculty, dept1, subj2);
-    auto teacher3 = std::make_shared<Teacher>("Сидоров Сидор Сидорович", faculty, dept2, subj3);
-    dept1->addTeacher(teacher1);
-    dept1->addTeacher(teacher2);
-    dept2->addTeacher(teacher3);
-
-    teacher1->printTeacherInformation();
-    std::cout << "---" << std::endl;
-    teacher2->printTeacherInformation();
-
-    std::cout << "\n========== ТЕСТ 5: Создание студентов ==========" << std::endl;
-    auto s1 = std::make_shared<Student>("Алексеев Алексей Алексеевич", "ИУ7-11Б", faculty, 40);
-    auto s2 = std::make_shared<Student>("Борисов Борис Борисович", "ИУ7-11Б", faculty, 40);
-    auto s3 = std::make_shared<Student>("Викторов Виктор Викторович", "ИУ7-11Б", faculty, 40);
-    faculty->addStudent(s1);
-    faculty->addStudent(s2);
-    faculty->addStudent(s3);
-
-    s1->printStudentInformation();
-
-    std::cout << "\n========== ТЕСТ 6: Печать информации о факультете ==========" << std::endl;
-    faculty->printFacultyInformafion();
-
-    std::cout << "\n========== ТЕСТ 7: Добавление лекции ==========" << std::endl;
-    std::vector<std::shared_ptr<Student>> group = {s1, s2, s3};
-    faculty->addLecture(group, dept1, "Иванов Иван Иванович");
-    std::cout << "---" << std::endl;
-    faculty->addLecture(group, dept1, "Петров Пётр Петрович");
-    std::cout << "---" << std::endl;
-    // Ошибка: нет такого преподавателя
-    faculty->addLecture(group, dept1, "Несуществующий Преподаватель");
-
-    std::cout << "\n========== ТЕСТ 8: Изменение данных ==========" << std::endl;
-    faculty->setFacultyName("ПИиКТ");
-    std::cout << "Новое имя факультета: " << faculty->getFacultyName() << std::endl;
-
-    dept1->setDepartmentName("Кафедра ПМИ");
-    std::cout << "Новое имя кафедры: " << dept1->getDepartmentName() << std::endl;
-
-    subj1->setHours(5);
-    std::cout << "Новое количество часов: " << subj1->getHours() << std::endl;
-
-    s1->setGroupNumber("ИУ7-12Б");
-    std::cout << "Новая группа студента: " << s1->getGroupNumber() << std::endl;
-
-    std::cout << "\n========== ТЕСТ 9: Печать кафедры ==========" << std::endl;
-    dept1->printDepartmentInformation();
-    
-    std::cout << "\nВсе тесты завершены." << std::endl;
-    return 0;
+        switch (choice) {
+            case 1:
+                faculty->printFacultyInformafion();
+                break;
+            case 2:
+                dept1->printDepartmentInformation();
+                cout << "--------------------------" << endl;
+                dept2->printDepartmentInformation();
+                break;
+            case 3:
+                for (int i = 0; i < int(group.size()); i++) {
+                    group[i]->printStudentInformation();
+                    cout << "---------------------------" << endl;
+                }
+                break;
+            case 4:
+                stud2->setGroupNumber("450502");
+                stud2->setMaxHoursPerWeek(20);
+                stud2->printStudentInformation();
+                break;
+            case 5:
+                dept2->setDepartmentName("Кафедра Физики");
+                dept2->printDepartmentInformation();
+                break;
+            case 6:
+                faculty->addLecture(group, dept1, "Скиба Ирина Геннадьевна");
+        }
+    } while (choice != 0);
 }

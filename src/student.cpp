@@ -6,11 +6,15 @@
 #include "faculty.h"
 #include "student.h"
 
-Student::Student(std::string_view fullName, std::string_view groupNumber, std::weak_ptr<Faculty> faculty, unsigned int maxHoursPerWeek)
-    : _fullName(fullName), _groupNumber(groupNumber), _faculty(faculty), _maxHoursPerWeek(maxHoursPerWeek) {}
+Student::Student(std::string_view fullName, std::string_view groupNumber, std::weak_ptr<Faculty> faculty, unsigned int maxHoursPerWeek, unsigned int hours)
+    : _fullName(fullName), _groupNumber(groupNumber), _faculty(faculty), _maxHoursPerWeek(maxHoursPerWeek), _hours(hours) {}
 
 std::string_view Student::getFullName() const {
     return _fullName;
+}
+
+unsigned int Student::getHours() const {
+    return _hours;
 }
 
 std::string_view Student::getGroupNumber() const {
@@ -27,6 +31,10 @@ unsigned int Student::getMaxHoursPerWeek() const {
 
 void Student::setGroupNumber(std::string_view newGroupNumber) {
     _groupNumber = newGroupNumber;
+}
+
+void Student::setHours(unsigned int newHours) {
+    _hours = newHours;
 }
 
 void Student::setFaculty(std::weak_ptr<Faculty> newFaculty) {

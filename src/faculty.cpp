@@ -33,6 +33,10 @@ void Faculty::addDepartment(std::shared_ptr<Department> newDepartment) {
 }
 
 void Faculty::addStudent(std::shared_ptr<Student> newStudent) {
+    if (int(_students.size()) + 1 > int(_maxStudentsCount)) {
+        std::cout << "Факультет полон, студент не зачислен!" << std::endl;
+        return;
+    }
     _students.push_back(newStudent);
 }
 
@@ -54,12 +58,12 @@ void Faculty::addLecture(std::vector<std::shared_ptr<Student>> group, std::share
         return;
     }
 
-    if (group[0]->getMaxHoursPerWeek() > 0) {
+    if (group[0]->getHours() > department->getTeachingStaff()[teacherIdx]->getSubject()->getHours()) {
         for (int i = 0; i < int(group.size()); i++) {
-            group[i]->setMaxHoursPerWeek(group[i]->getMaxHoursPerWeek() - department->getTeachingStaff()[teacherIdx]->getSubject()->getHours());
+            group[i]->setHours(group[i]->getHours() - department->getTeachingStaff()[teacherIdx]->getSubject()->getHours());
         }
 
-        std::cout << "Занятие по предмету " << department->getTeachingStaff()[teacherIdx]->getSubject()->getSubjectName() << " с преподавателем " << department->getTeachingStaff()[teacherIdx]->getFullName() << " успешно установлено. Свободных часов у группы: " << group[0]->getMaxHoursPerWeek() << std::endl;
+        std::cout << "Занятие по предмету " << department->getTeachingStaff()[teacherIdx]->getSubject()->getSubjectName() << " с преподавателем " << department->getTeachingStaff()[teacherIdx]->getFullName() << " успешно установлено. Свободных часов у группы: " << group[0]->getHours() << std::endl;
     }
     else {
         std::cout << "У студентов данной группы нет свободных часов для выставления занятий!" << std::endl;
