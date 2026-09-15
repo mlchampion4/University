@@ -62,6 +62,7 @@ void Student::setMarks(std::vector<unsigned int> newMarks) {
 }
 
 unsigned int Student::calculateAvgMark(std::vector<unsigned int> marks) const {
+    if (marks.empty()) return 0;
     int count = int(marks.size());
     int sum = 0;
     for (int i = 0; i < count; i++) {
