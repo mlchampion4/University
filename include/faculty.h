@@ -18,8 +18,10 @@ class Faculty {
         void setFacultyName(std::string_view newFacultyName);
         void setMaxStudentsCount(unsigned int newMaxStudentsCount);
 
-        void addDepartment(std::shared_ptr<Department> newDepartment);
-        void addStudent(std::shared_ptr<Student> newStudent);
+        std::shared_ptr<Faculty> operator+=(const std::shared_ptr<Student> student);
+        std::shared_ptr<Faculty> operator-=(const std::shared_ptr<Student> student);
+        std::shared_ptr<Faculty> operator+=(const std::shared_ptr<Department> department);
+        std::shared_ptr<Faculty> operator-=(const std::shared_ptr<Department> department);
         void addLecture(std::vector<std::shared_ptr<Student>> group, std::shared_ptr<Department> department, std::string_view teacherName);
 
         void printFacultyInformafion() const;

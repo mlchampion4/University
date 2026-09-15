@@ -7,6 +7,15 @@
 Subject::Subject(std::string_view subjectName, unsigned int hours, ControlType controlType)
     : _subjectName(subjectName), _hours(hours), _controlType(controlType) {}
 
+std::ostream& operator<<(std::ostream& os, ControlType ct) {
+    switch(ct) {
+        case EXAM: return os << "Экзамен";
+        case CREDIT: return os << "Зачёт";
+        case GRADEDCREDIT: return os << "Дифф. зачёт";
+        default: return os << "Ошибка";
+    }
+}
+
 std::string_view Subject::getSubjectName() const {
     return _subjectName;
 }

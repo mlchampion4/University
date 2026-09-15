@@ -1,4 +1,5 @@
 #include <string>
+#include <algorithm>
 #include <vector>
 #include <string_view>
 #include <memory>
@@ -26,18 +27,6 @@ void Faculty::setFacultyName(std::string_view newFacultyName) {
 
 void Faculty::setMaxStudentsCount(unsigned int newMaxStudentsCount) {
     _maxStudentsCount = newMaxStudentsCount;
-}
-
-void Faculty::addDepartment(std::shared_ptr<Department> newDepartment) {
-    _departments.push_back(newDepartment);
-}
-
-void Faculty::addStudent(std::shared_ptr<Student> newStudent) {
-    if (int(_students.size()) + 1 > int(_maxStudentsCount)) {
-        std::cout << "Факультет полон, студент не зачислен!" << std::endl;
-        return;
-    }
-    _students.push_back(newStudent);
 }
 
 int findTeacher(std::shared_ptr<Department> department, std::string_view teacherName) {
@@ -80,6 +69,38 @@ void Faculty::printFacultyInformafion() const {
     std::cout << "Максимальное число студентов: " << _maxStudentsCount << std::endl;
     std::cout << "Список студентов: " << std::endl;
     for (int i = 0; i < int(_students.size()); i++) {
-        std::cout << _students[i]->getFullName() << " группа " << _students[i]->getGroupNumber() << std::endl;
+        std::cout << _students[i]->getFullName() << ", номер студ. билета: " << _students[i]->getStudentNumber() << " группа " << _students[i]->getGroupNumber() << std::endl;
     }
+}
+
+std::shared_ptr<Faculty> Faculty::operator+=(const std::shared_ptr<Student> student) {
+    if (int(_students.size()) + 1 > int(_maxStudentsCount)) {
+        std::cout << "Факультет полон, студент не зачислен!" << std::endl;
+        return student->getFaculty().lock();
+    }
+    _students.push_back(student);
+    return student->getFaculty().lock();
+}
+
+std::shared_ptr<Faculty> Faculty::operator-=(const std::shared_ptr<Student> student) {
+    if (!student) return nullptr;
+
+    _students.erase(
+        std::remove_if(_students.begin(), _students.end(),
+            [&student](const std::shared_ptr<Student>& s) {
+                return s && *s == *student;
+        }),
+        _students.end()
+    );
+    return student->getFaculty().lock();
+}
+
+std::shared_ptr<Faculty> Faculty::operator+=(const std::shared_ptr<Department> department) {
+    _departments.push_back(department);
+    return department->getFaculty();
+}
+
+std::shared_ptr<Faculty> Faculty::operator-=(const std::shared_ptr<Department> department) {
+    _departments.erase(std::remove(_departments.begin(), _departments.end(), department), _departments.end());
+    return department->getFaculty();
 }

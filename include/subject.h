@@ -11,15 +11,6 @@ enum ControlType {
     GRADEDCREDIT
 };
 
-inline std::ostream& operator<<(std::ostream& os, ControlType ct) {
-    switch(ct) {
-        case EXAM: return os << "Экзамен";
-        case CREDIT: return os << "Зачёт";
-        case GRADEDCREDIT: return os << "Дифф. зачёт";
-        default: return os << "Ошибка";
-    }
-}
-
 class Subject {
     public:
         Subject(std::string_view subjectName, unsigned int hours, ControlType controlType);

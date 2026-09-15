@@ -1,4 +1,3 @@
-// main.cpp
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -15,12 +14,14 @@ using namespace std;
 
 void printMenu() {
     cout << "\n========== МЕНЮ ==========\n";
-    cout << "1. Показать информацию о факультете\n";
-    cout << "2. Показать кафедры\n";
-    cout << "3. Показать студентов\n";
-    cout << "4. Изменить данные студента\n";
-    cout << "5. Изменить данные кафедры\n";
-    cout << "6. Поставить занятие с преподавателем\n";
+    cout << "(Ввод-вывод осуществяется кастомными операторами)\n";
+    cout << "1. Оператор равенства студентов по студ.билету\n";
+    cout << "2. Оператор неравенства студентов по студ.билету\n";
+    cout << "3. Операторы сравнения студентов по среднему баллу\n";
+    cout << "4. Оператор += (зачислить студента на факультет, с ограничением на число студентов на факльтет)\n";
+    cout << "5. Оператор += (добавить кафедру на факультет)\n";
+    cout << "6. Оператор -= (отчислить студента с факультета)\n";
+    cout << "7. Оператор -= (удалить кафедру с факультета)\n";
     cout << "0. Выход\n";
     cout << "===========================\n";
 }
@@ -45,24 +46,21 @@ int inputInt(string_view message) {
 
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
-
-    auto faculty = make_shared<Faculty>("ФКСиС", 150);
-    auto dept1 = make_shared<Department>("Кафедра ЭВМ", faculty);
-    auto dept2 = make_shared<Department>("Кафедра ВМ", faculty);
-    auto stud1 = make_shared<Student>("Драбудько Никита Геннадьевич", "550501", faculty, 50, 50);
-    auto stud2 = make_shared<Student>("Иванов Иван Иванович", "550502", faculty, 10, 10);
-    auto stud3 = make_shared<Student>("Петров Пётр Петрович", "550503", faculty, 2, 2);
-    auto subject = make_shared<Subject>("ПнаЯВУ", 4, CREDIT);
-    auto teacher = make_shared<Teacher>("Скиба Ирина Геннадьевна", faculty, dept1, subject);
     int choice;
-    vector<shared_ptr<Student>> group = {stud1, stud2, stud3};
+    bool eq;
+    auto faculty = make_shared<Faculty>("ФКСиС", 4);
 
-    dept1->addTeacher(teacher);
+    auto stud1 = Student("Драбудько Никита Геннадьевич", "55830038", "550501", faculty, 50);
+    stud1.setMarks(vector<unsigned int> {10, 9, 8, 9});
+    auto stud2 = Student("Драбудько Никита Геннадьевич", "55830038", "550501", faculty, 20);
+    stud2.setMarks(vector<unsigned int> {10, 9, 8, 9});
+    auto stud3 = Student("Безруких Тимофей Игоревич", "55830012", "550501", faculty, 50);
+    stud3.setMarks(vector<unsigned int> {9, 5, 7, 4});
+    auto ne_stud = Student();
+    ne_stud.setFaculty(faculty);
+    ne_stud.setMarks(vector<unsigned int> {3, 4, 5, 6});
 
-    faculty->addDepartment(dept1);
-    faculty->addStudent(stud1);
-    faculty->addStudent(stud2);
-    faculty->addStudent(stud3);
+    auto dept = make_shared<Department>("Кафедра ЭВМ", faculty);
 
     do {
         printMenu();
@@ -70,30 +68,57 @@ int main() {
 
         switch (choice) {
             case 1:
-                faculty->printFacultyInformafion();
+                cout << stud1 << endl;
+                cout << stud2 << endl;
+                eq = stud1 == stud2;
+                cout << eq;
                 break;
             case 2:
-                dept1->printDepartmentInformation();
-                cout << "--------------------------" << endl;
-                dept2->printDepartmentInformation();
+                cin >> ne_stud;
+                cout << ne_stud;
+                cout << stud1;
+                eq = stud1 != ne_stud;
+                cout << eq;
                 break;
             case 3:
-                for (int i = 0; i < int(group.size()); i++) {
-                    group[i]->printStudentInformation();
-                    cout << "---------------------------" << endl;
-                }
+                cout << stud1 << endl;
+                cout << stud3 << endl;
+                cout << stud2 << "(для нестрогих сравнений в случае равенства)" << endl;
+                eq = stud1 > stud3;
+                cout << "Оператор >: " << eq << endl;
+                eq = stud1 < stud3;
+                cout << "Оператор <: " << eq << endl;
+                eq = stud1 >= stud2;
+                cout << "Оператор >=: " << eq << endl;
+                eq = stud1 <= stud3;
+                cout << "Оператор <=: " << eq << endl;
                 break;
             case 4:
-                stud2->setGroupNumber("450502");
-                stud2->setMaxHoursPerWeek(20);
-                stud2->printStudentInformation();
+                *faculty += make_shared<Student>(stud1);
+                *faculty += make_shared<Student>(stud2);
+                *faculty += make_shared<Student>(stud3);
+                *faculty += make_shared<Student>(ne_stud);
+                faculty->printFacultyInformafion();
+                cout << "Добавление студента в полный факультет: \n";
+                *faculty += make_shared<Student>("Бубылда", "55830001", "550505", faculty, 2);
+                faculty->printFacultyInformafion();
                 break;
             case 5:
-                dept2->setDepartmentName("Кафедра Физики");
-                dept2->printDepartmentInformation();
+                dept->printDepartmentInformation();
+                *faculty += dept;
+                cout << "Кафедра успешно добавлена! \n";
+                faculty->printFacultyInformafion();
                 break;
             case 6:
-                faculty->addLecture(group, dept1, "Скиба Ирина Геннадьевна");
+                *faculty -= make_shared<Student>(ne_stud);
+                cout << "Студент отчислен \n";
+                faculty->printFacultyInformafion();
+                break;
+            case 7:
+                *faculty -= dept;
+                cout << "Кафедра успешно удалена \n";
+                faculty->printFacultyInformafion();
+                break;
         }
     } while (choice != 0);
 }
