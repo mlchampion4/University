@@ -71,27 +71,37 @@ int main() {
                 cout << stud1 << endl;
                 cout << stud2 << endl;
                 eq = stud1 == stud2;
-                cout << eq;
+                if (eq == 1) cout << "True";
+                else cout << "False";
                 break;
             case 2:
                 cin >> ne_stud;
                 cout << ne_stud;
                 cout << stud1;
                 eq = stud1 != ne_stud;
-                cout << eq;
+                if (eq == 1) cout << "True";
+                else cout << "False";
                 break;
             case 3:
                 cout << stud1 << endl;
                 cout << stud3 << endl;
                 cout << stud2 << "(для нестрогих сравнений в случае равенства)" << endl;
                 eq = stud1 > stud3;
-                cout << "Оператор >: " << eq << endl;
+                cout << "Оператор >: ";
+                if (eq == 1) cout << "True\n";
+                else cout << "False\n";
                 eq = stud1 < stud3;
-                cout << "Оператор <: " << eq << endl;
+                cout << "Оператор <: ";
+                if (eq == 1) cout << "True\n";
+                else cout << "False\n";
                 eq = stud1 >= stud2;
-                cout << "Оператор >=: " << eq << endl;
+                cout << "Оператор >=: ";
+                if (eq == 1) cout << "True\n";
+                else cout << "False\n";
                 eq = stud1 <= stud3;
-                cout << "Оператор <=: " << eq << endl;
+                cout << "Оператор <=: ";
+                if (eq == 1) cout << "True\n";
+                else cout << "False\n";
                 break;
             case 4:
                 *faculty += make_shared<Student>(stud1);
