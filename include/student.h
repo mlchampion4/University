@@ -37,12 +37,12 @@ class Student {
         friend std::ostream& operator<<(std::ostream& os, const Student& student);
         friend std::istream& operator>>(std::istream& is, Student& student);
 
-        bool operator==(const Student otherStudent) const;
-        bool operator!=(const Student otherStudent) const;
-        bool operator>(const Student otherStudent) const;
-        bool operator<(const Student otherStudent) const;
-        bool operator>=(const Student otherStudent) const;
-        bool operator<=(const Student otherStudent) const;
+        bool operator==(const Student& otherStudent) const;
+        bool operator!=(const Student& otherStudent) const;
+        bool operator>(const Student& otherStudent) const;
+        bool operator<(const Student& otherStudent) const;
+        bool operator>=(const Student& otherStudent) const;
+        bool operator<=(const Student& otherStudent) const;
         
     private:
         std::string _fullName;

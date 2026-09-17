@@ -91,26 +91,26 @@ std::istream& operator>>(std::istream& is, Student& student) {
     return is;
 }
 
-bool Student::operator==(const Student otherStudent) const {
+bool Student::operator==(const Student& otherStudent) const {
     return _studentNumber == otherStudent.getStudentNumber();
 }
 
-bool Student::operator!=(const Student otherStudent) const {
+bool Student::operator!=(const Student& otherStudent) const {
     return _studentNumber != otherStudent.getStudentNumber();
 }
 
-bool Student::operator<(const Student otherStudent) const {
+bool Student::operator<(const Student& otherStudent) const {
     return calculateAvgMark(_marks) < otherStudent.calculateAvgMark(otherStudent.getMarks());
 }
 
-bool Student::operator>(const Student otherStudent) const {
+bool Student::operator>(const Student& otherStudent) const {
     return calculateAvgMark(_marks) > otherStudent.calculateAvgMark(otherStudent.getMarks());
 }
 
-bool Student::operator>=(const Student otherStudent) const {
+bool Student::operator>=(const Student& otherStudent) const {
     return calculateAvgMark(_marks) >= otherStudent.calculateAvgMark(otherStudent.getMarks());
 }
 
-bool Student::operator<=(const Student otherStudent) const {
+bool Student::operator<=(const Student& otherStudent) const {
     return calculateAvgMark(_marks) <= otherStudent.calculateAvgMark(otherStudent.getMarks());
 }
