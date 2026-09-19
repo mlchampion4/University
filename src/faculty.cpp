@@ -9,6 +9,7 @@
 #include "faculty.h"
 #include "teacher.h"
 #include "subject.h"
+#include "member.h"
 
 Faculty::Faculty(std::string_view facultyName, unsigned int maxStudentsCount)
     : _facultyName(facultyName), _maxStudentsCount(maxStudentsCount) {}
@@ -30,8 +31,12 @@ void Faculty::setMaxStudentsCount(unsigned int newMaxStudentsCount) {
 }
 
 int findTeacher(std::shared_ptr<Department> department, std::string_view teacherName) {
-    for (int i = 0; i < int(department->getTeachingStaff().size()); i++) {
-        if (department->getTeachingStaff()[i]->getFullName() == teacherName) {
+    if (!department) return -1;
+
+    const auto& staff = department->getTeachingStaff();
+
+    for (int i = 0; i < int(staff.size()); i++) {
+        if (staff[i]->getFullName() == teacherName) {
             return i;
         }
     }

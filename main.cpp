@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <memory>
 #include <vector>
 #include <string>
@@ -9,22 +10,9 @@
 #include "student.h"
 #include "teacher.h"
 #include "subject.h"
+#include "admin.h"
 
 using namespace std;
-
-void printMenu() {
-    cout << "\n========== МЕНЮ ==========\n";
-    cout << "(Ввод-вывод осуществяется кастомными операторами)\n";
-    cout << "1. Оператор равенства студентов по студ.билету\n";
-    cout << "2. Оператор неравенства студентов по студ.билету\n";
-    cout << "3. Операторы сравнения студентов по среднему баллу\n";
-    cout << "4. Оператор += (зачислить студента на факультет, с ограничением на число студентов на факльтет)\n";
-    cout << "5. Оператор += (добавить кафедру на факультет)\n";
-    cout << "6. Оператор -= (отчислить студента с факультета)\n";
-    cout << "7. Оператор -= (удалить кафедру с факультета)\n";
-    cout << "0. Выход\n";
-    cout << "===========================\n";
-}
 
 int inputInt(string_view message) {
     string input;
@@ -43,24 +31,33 @@ int inputInt(string_view message) {
     }
 }
 
+void printMenu() {
+    cout << "\n========== МЕНЮ ==========\n";
+    cout << "ЛР 3:\n";
+    cout << "1. Показать ФИО и факультет (только унаслед. поля)\n";
+    cout << "2. Показать спец. поля производных типов\n";
+    cout << "3. Унаследованный сеттер\n";
+    cout << "4. Унаследованный геттер\n";
+    cout << "ЛР 4:\n";
+    cout << "5. Полиморфный подсчет метрик для коллекции объектов UniversityMember\n";
+    cout << "6. Поиск самого результативного member'а\n";
+    cout << "7. Массовое действие для всей коллекции\n";
+    cout << "0. Выход\n";
+    cout << "===========================\n";
+}
+
 
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
     int choice;
-    bool eq;
-    auto faculty = make_shared<Faculty>("ФКСиС", 4);
-
-    auto stud1 = Student("Драбудько Никита Геннадьевич", "55830038", "550501", faculty, 50);
-    stud1.setMarks(vector<unsigned int> {10, 9, 8, 9});
-    auto stud2 = Student("Драбудько Никита Геннадьевич", "55830038", "550501", faculty, 20);
-    stud2.setMarks(vector<unsigned int> {10, 9, 8, 9});
-    auto stud3 = Student("Безруких Тимофей Игоревич", "55830012", "550501", faculty, 50);
-    stud3.setMarks(vector<unsigned int> {9, 5, 7, 4});
-    auto ne_stud = Student();
-    ne_stud.setFaculty(faculty);
-    ne_stud.setMarks(vector<unsigned int> {3, 4, 5, 6});
-
+    auto faculty = make_shared<Faculty>("ФКСиС", 150);
+    auto newFac = make_shared<Faculty>("ФИТУ", 100);
     auto dept = make_shared<Department>("Кафедра ЭВМ", faculty);
+    auto subj = make_shared<Subject>("ПнаЯВУ", 100, CREDIT);
+    vector<unique_ptr<UniversityMember>> members;
+    members.push_back(make_unique<Student>("Драбудьно Н.Г.", faculty, "55830038", "550501", 30));
+    members.push_back(make_unique<Teacher>("Скиба И.Г.", faculty, dept, subj, 50));
+    members.push_back(make_unique<Administrator>("Залупа З.З.", faculty, "Зав. кафедрой ЭВМ", 100));
 
     do {
         printMenu();
@@ -68,66 +65,127 @@ int main() {
 
         switch (choice) {
             case 1:
-                cout << stud1 << endl;
-                cout << stud2 << endl;
-                eq = stud1 == stud2;
-                if (eq == 1) cout << "True";
-                else cout << "False";
+                cout << "ФИО и факультет: \n";
+                for (const auto& m : members) {
+                    cout << m->getFullName() << '\n';
+                    cout << m->getFaculty().lock()->getFacultyName() << '\n';
+                }
                 break;
             case 2:
-                cin >> ne_stud;
-                cout << ne_stud;
-                cout << stud1;
-                eq = stud1 != ne_stud;
-                if (eq == 1) cout << "True";
-                else cout << "False";
+                cout << "Спец. поля производных типов:\n";
+                for (const auto& m : members) {
+                    cout << "--- " << m->getType() << " ---\n";
+        
+                    if (auto* student = dynamic_cast<Student*>(m.get())) {
+                        cout << "  Номер билета: " << student->getStudentNumber() << '\n';
+                        cout << "  Группа: " << student->getGroupNumber() << '\n';
+                        cout << "  Макс. часов/нед.: " << student->getMaxHoursPerWeek() << '\n';
+                        cout << "  Оценки: ";
+                        for (auto mark : student->getMarks()) cout << mark << " ";
+                            cout << '\n';
+                    }
+
+                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
+                        cout << "  Предмет: " << teacher->getSubject()->getSubjectName() << '\n';
+                        cout << "  Нагрузка: " << teacher->getTeachingLoad() << '\n';
+                    }
+
+                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
+                        cout << "  Должность: " << admin->getPosition() << '\n';
+                        cout << "  Подчинённых: " << admin->getManagedPeople() << '\n';
+                    }
+                }
                 break;
             case 3:
-                cout << stud1 << endl;
-                cout << stud3 << endl;
-                cout << stud2 << "(для нестрогих сравнений в случае равенства)" << endl;
-                eq = stud1 > stud3;
-                cout << "Оператор >: ";
-                if (eq == 1) cout << "True\n";
-                else cout << "False\n";
-                eq = stud1 < stud3;
-                cout << "Оператор <: ";
-                if (eq == 1) cout << "True\n";
-                else cout << "False\n";
-                eq = stud1 >= stud2;
-                cout << "Оператор >=: ";
-                if (eq == 1) cout << "True\n";
-                else cout << "False\n";
-                eq = stud1 <= stud3;
-                cout << "Оператор <=: ";
-                if (eq == 1) cout << "True\n";
-                else cout << "False\n";
+                cout << "Унаследованный сеттер:\n";
+
+                members[0]->setFaculty(newFac);
+                members[1]->setFaculty(newFac);
+                members[2]->setFaculty(newFac);
+
+                for (const auto& m : members) {
+                    cout << *m << '\n';
+                }
                 break;
             case 4:
-                *faculty += make_shared<Student>(stud1);
-                *faculty += make_shared<Student>(stud2);
-                *faculty += make_shared<Student>(stud3);
-                *faculty += make_shared<Student>(ne_stud);
-                faculty->printFacultyInformafion();
-                cout << "Добавление студента в полный факультет: \n";
-                *faculty += make_shared<Student>("Бубылда", "55830001", "550505", faculty, 2);
-                faculty->printFacultyInformafion();
+                cout << "Унаследованный геттер:\n";
+
+                for (const auto& m : members) {
+                    cout << "--- " << m->getType() << " ---\n";
+        
+                    if (auto* student = dynamic_cast<Student*>(m.get())) {
+                        cout << student->getFullName() << "  " << student->getFaculty().lock()->getFacultyName() << '\n';
+                    }
+
+                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
+                        cout << teacher->getFullName() << "  " << teacher->getFaculty().lock()->getFacultyName() << '\n';
+                    }
+
+                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
+                        cout << admin->getFullName() << "  " << admin->getFaculty().lock()->getFacultyName() << '\n';
+                    }
+                }
                 break;
             case 5:
-                dept->printDepartmentInformation();
-                *faculty += dept;
-                cout << "Кафедра успешно добавлена! \n";
-                faculty->printFacultyInformafion();
+                for (const auto& m : members) {
+                    cout << "--- " << m->getType() << " ---\n";
+
+                    double metric = m->calculateMetric();
+
+                    if (auto* student = dynamic_cast<Student*>(m.get())) {
+                        cout << student->getFullName() << '\n';
+                        cout << "Средний балл: " << metric << '\n';
+                    }
+
+                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
+                        cout << teacher->getFullName() << '\n';
+                        cout << "Метрика нагрузки: " << metric << '\n';
+                    }
+
+                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
+                        cout << admin->getFullName() << '\n';
+                        cout << "Влиятельность: " << metric << '\n';
+                    }
+                }
                 break;
-            case 6:
-                *faculty -= make_shared<Student>(ne_stud);
-                cout << "Студент отчислен \n";
-                faculty->printFacultyInformafion();
+            case 6: {
+                cout << "Самый результативный member:\n";
+                auto it = std::max_element(
+                    members.begin(),
+                    members.end(),
+                    [](const unique_ptr<UniversityMember>& a,
+                       const unique_ptr<UniversityMember>& b) {
+                        return a->calculateMetric() < b->calculateMetric();
+                       }
+                );
+                UniversityMember* best = it->get();
+
+                cout << "Тип:     " << best->getType() << '\n';
+                cout << "ФИО:     " << best->getFullName() << '\n';
+                cout << "Метрика: " << best->calculateMetric() << '\n';
                 break;
+            }
             case 7:
-                *faculty -= dept;
-                cout << "Кафедра успешно удалена \n";
-                faculty->printFacultyInformafion();
+                for (const auto& m : members) {
+                    cout << "--- " << m->getType() << " ---\n";
+
+                    if (auto* student = dynamic_cast<Student*>(m.get())) {
+                        student->applyEffect(5);
+                        cout << "Добавлена оценка:\n";
+                        for (auto mark : student->getMarks()) cout << mark << " ";
+                        cout << '\n';
+                    }
+
+                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
+                        teacher->applyEffect(20);
+                        cout << "Добавлены часы: " << teacher->getTeachingLoad() << '\n';
+                    }
+
+                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
+                        admin->applyEffect(3);
+                        cout << "Добавлены подчинённые: " << admin->getManagedPeople() << '\n';
+                    }
+                }
                 break;
         }
     } while (choice != 0);

@@ -5,13 +5,10 @@
 #include <memory>
 #include "faculty.h"
 #include "student.h"
+#include "member.h"
 
-Student::Student(std::string_view fullName, std::string_view studentNumber, std::string_view groupNumber, std::weak_ptr<Faculty> faculty, unsigned int maxHoursPerWeek)
-    : _fullName(fullName), _studentNumber(studentNumber), _groupNumber(groupNumber), _faculty(faculty), _maxHoursPerWeek(maxHoursPerWeek), _hours(maxHoursPerWeek) {}
-
-std::string_view Student::getFullName() const {
-    return _fullName;
-}
+Student::Student(std::string_view fullName, std::weak_ptr<Faculty> faculty, std::string_view studentNumber, std::string_view groupNumber, unsigned int maxHoursPerWeek)
+    : UniversityMember(fullName, faculty), _studentNumber(studentNumber), _groupNumber(groupNumber), _maxHoursPerWeek(maxHoursPerWeek), _hours(maxHoursPerWeek) {}
 
 std::string Student::getStudentNumber() const {
     return _studentNumber;
@@ -23,10 +20,6 @@ unsigned int Student::getHours() const {
 
 std::string_view Student::getGroupNumber() const {
     return _groupNumber;
-}
-
-std::weak_ptr<Faculty> Student::getFaculty() const {
-    return _faculty.lock();
 }
 
 unsigned int Student::getMaxHoursPerWeek() const {
@@ -49,34 +42,12 @@ void Student::setHours(unsigned int newHours) {
     _hours = newHours;
 }
 
-void Student::setFaculty(std::weak_ptr<Faculty> newFaculty) {
-    _faculty = newFaculty;
-}
-
 void Student::setMaxHoursPerWeek(unsigned int newMaxHoursPerWeek) {
     _maxHoursPerWeek = newMaxHoursPerWeek;
 }
 
 void Student::setMarks(std::vector<unsigned int> newMarks) {
     _marks = newMarks;
-}
-
-unsigned int Student::calculateAvgMark(std::vector<unsigned int> marks) const {
-    if (marks.empty()) return 0;
-    unsigned int sum = 0;
-    for (unsigned int m : marks) sum += m;
-    return sum / static_cast<unsigned int>(marks.size());
-}
-
-std::ostream& operator<<(std::ostream& os, const Student& student) {
-    os << "ФИО Студента: " << student._fullName << "\n" << "Номер студенческого билета: "
-     << student._studentNumber << "\n" << "Факультет: " << student._faculty.lock()->getFacultyName() << "\n"
-     << "Группа: " << student._groupNumber << "\n" << "Максимум часов в неделю: "
-     << student._maxHoursPerWeek << std::endl;
-     os << "Оценки: \n";
-     for (const auto& s: student._marks)
-        os << s << "\n";
-     return os;
 }
 
 std::istream& operator>>(std::istream& is, Student& student) {
@@ -100,17 +71,48 @@ bool Student::operator!=(const Student& otherStudent) const {
 }
 
 bool Student::operator<(const Student& otherStudent) const {
-    return calculateAvgMark(_marks) < otherStudent.calculateAvgMark(otherStudent.getMarks());
+    return this->calculateMetric() < otherStudent.calculateMetric();
 }
 
 bool Student::operator>(const Student& otherStudent) const {
-    return calculateAvgMark(_marks) > otherStudent.calculateAvgMark(otherStudent.getMarks());
+    return this->calculateMetric() > otherStudent.calculateMetric();
 }
 
 bool Student::operator>=(const Student& otherStudent) const {
-    return calculateAvgMark(_marks) >= otherStudent.calculateAvgMark(otherStudent.getMarks());
+    return this->calculateMetric() >= otherStudent.calculateMetric();
 }
 
 bool Student::operator<=(const Student& otherStudent) const {
-    return calculateAvgMark(_marks) <= otherStudent.calculateAvgMark(otherStudent.getMarks());
+    return this->calculateMetric() <= otherStudent.calculateMetric();
+}
+
+std::string Student::getType() const {
+    return "Student";
+}
+
+void Student::printInformation(std::ostream& os) const {
+    os << "ФИО Студента: " << _fullName << "\n" << "Номер студенческого билета: "
+     << _studentNumber << "\n" << "Факультет: " << _faculty.lock()->getFacultyName() << "\n"
+     << "Группа: " << _groupNumber << "\n" << "Максимум часов в неделю: "
+     << _maxHoursPerWeek << std::endl;
+     os << "Оценки: \n";
+     for (const auto& s: _marks)
+        os << s << "\n";
+}
+
+double Student::calculateMetric() const {
+    if (_marks.empty()) return 0;
+    unsigned int sum = 0;
+    for (unsigned int m : _marks) sum += m;
+    return static_cast<double>(sum) / _marks.size();
+}
+
+void Student::applyEffect(int value) {
+    if (value < 0 || value > 10) {
+        std::cout << "Введенное число не является оценкой, повторите попытку\n";
+        return;
+    }
+
+    _marks.push_back(static_cast<unsigned int>(value));
+    std::cout << "Cтуденту " << _fullName << " успешно выставлена оценка " << value << '\n';
 }

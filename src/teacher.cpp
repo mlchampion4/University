@@ -8,16 +8,8 @@
 #include "subject.h"
 #include "teacher.h"
 
-Teacher::Teacher(std::string_view fullName, std::weak_ptr<Faculty> faculty, std::weak_ptr<Department> department, std::shared_ptr<Subject> subject)
-    : _fullName(fullName), _faculty(faculty), _department(department), _subject(subject) {}
-
-std::string_view Teacher::getFullName() const {
-    return _fullName;
-}
-
-std::shared_ptr<Faculty> Teacher::getFaculty() const {
-    return _faculty.lock();
-}
+Teacher::Teacher(std::string_view fullName, std::weak_ptr<Faculty> faculty, std::weak_ptr<Department> department, std::shared_ptr<Subject> subject, int maxTeachingLoad)
+    : UniversityMember(fullName, faculty), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {}
 
 std::shared_ptr<Department> Teacher::getDepartment() const {
     return _department.lock();
@@ -31,17 +23,39 @@ void Teacher::setDepartment(std::weak_ptr<Department> newDepartment) {
     _department = newDepartment;
 }
 
-void Teacher::setFaculty(std::weak_ptr<Faculty> newFaculty) {
-    _faculty = newFaculty;
-}
-
 void Teacher::setSubject(std::shared_ptr<Subject> newSubject) {
     _subject = newSubject;
 }
 
-void Teacher::printTeacherInformation() const {
-    std::cout << "ФИО преподавателя: " << _fullName << std::endl;
-    std::cout << "Факультет: " << _faculty.lock()->getFacultyName() << std::endl;
-    std::cout << "Кафедра: " << _department.lock()->getDepartmentName() << std::endl;
-    std::cout << "Предмет: " << _subject->getSubjectName() << std::endl;
+int Teacher::getTeachingLoad() const {
+    return _teachingLoad;
+}
+
+std::string Teacher::getType() const {
+    return "Teacher";
+}
+
+void Teacher::printInformation(std::ostream& os) const {
+    os << "ФИО Преподавателя: " << _fullName << "\n"
+    << "Факультет: " << _faculty.lock()->getFacultyName() << "\n"
+    << "Предмет: " << _subject->getSubjectName() << "\n"
+    << "Учебная нагрузка: " << _teachingLoad << "\n";
+}
+
+double Teacher::calculateMetric() const {
+    return 4 * _teachingLoad;
+}
+
+void Teacher::applyEffect(int value) {
+    if (value < 0) {
+        std::cout << "Нельзя уменьшать нагрузку!\n";
+        return;
+    }
+    if (_teachingLoad + value > _maxTeachingLoad) {
+        std::cout << "Поставить новые часы нельзя! Нагрузка слишком большая\n";
+        return;
+    } else {
+        _teachingLoad += value;
+        std::cout << "Преподавателю " << _fullName << " успешно добавлены часы " << value << '\n';
+    }
 }
