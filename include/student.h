@@ -27,20 +27,13 @@ class Student : public UniversityMember {
         void setHours(unsigned int newHours);
         void setMaxHoursPerWeek(unsigned int newMaxHoursPerWeek);
         void setMarks(std::vector<unsigned int> newMarks);
-
-        friend std::istream& operator>>(std::istream& is, Student& student);
-
-        bool operator==(const Student& otherStudent) const;
-        bool operator!=(const Student& otherStudent) const;
-        bool operator>(const Student& otherStudent) const;
-        bool operator<(const Student& otherStudent) const;
-        bool operator>=(const Student& otherStudent) const;
-        bool operator<=(const Student& otherStudent) const;
         
         std::string getType() const override;
         void printInformation(std::ostream& os) const override;
         double calculateMetric() const override;
         void applyEffect(int value) override;
+        void readFrom(std::istream& is) override;
+        bool equals(const UniversityMember& other) const override;
 
     private:
         std::string _studentNumber;

@@ -56,8 +56,8 @@ int main() {
     auto subj = make_shared<Subject>("ПнаЯВУ", 100, CREDIT);
     vector<unique_ptr<UniversityMember>> members;
     members.push_back(make_unique<Student>("Драбудьно Н.Г.", faculty, "55830038", "550501", 30));
-    members.push_back(make_unique<Teacher>("Скиба И.Г.", faculty, dept, subj, 50));
-    members.push_back(make_unique<Administrator>("Залупа З.З.", faculty, "Зав. кафедрой ЭВМ", 100));
+    members.push_back(make_unique<Teacher>(1, "Скиба И.Г.", faculty, dept, subj, 50));
+    members.push_back(make_unique<Administrator>(1, "Залупа З.З.", faculty, "Зав. кафедрой ЭВМ", 100));
 
     do {
         printMenu();

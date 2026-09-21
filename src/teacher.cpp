@@ -8,8 +8,8 @@
 #include "subject.h"
 #include "teacher.h"
 
-Teacher::Teacher(std::string_view fullName, std::weak_ptr<Faculty> faculty, std::weak_ptr<Department> department, std::shared_ptr<Subject> subject, int maxTeachingLoad)
-    : UniversityMember(fullName, faculty), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {}
+Teacher::Teacher(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty, std::weak_ptr<Department> department, std::shared_ptr<Subject> subject, int maxTeachingLoad)
+    : UniversityMember(fullName, faculty), _id(id), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {}
 
 std::shared_ptr<Department> Teacher::getDepartment() const {
     return _department.lock();
@@ -58,4 +58,22 @@ void Teacher::applyEffect(int value) {
         _teachingLoad += value;
         std::cout << "Преподавателю " << _fullName << " успешно добавлены часы " << value << '\n';
     }
+}
+
+void Teacher::readFrom(std::istream& is) {
+    std::cout << "Введите полное имя преподавателя: ";
+    std::getline(is >> std::ws, _fullName);
+    std::cout << "Введите макс. нагрузку: ";
+    is >> _maxTeachingLoad;
+}
+
+int Teacher::getId() const {
+    return _id;
+}
+
+bool Teacher::equals(const UniversityMember& other) const {
+    auto* t = dynamic_cast<const Teacher*>(&other);
+    if (!t) return false;
+
+    return _id == t->_id;
 }

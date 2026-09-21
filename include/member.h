@@ -21,13 +21,20 @@ class UniversityMember {
         virtual std::string getType() const = 0;
         virtual double calculateMetric() const;
         virtual void applyEffect(int value) = 0;
+        virtual void readFrom(std::istream& is) = 0;
+        virtual bool equals(const UniversityMember& other) const = 0;
+
+        friend std::ostream& operator<<(std::ostream& os, const UniversityMember& member);
+        friend std::istream& operator>>(std::istream& is, UniversityMember& member);
+
+        bool operator<(const UniversityMember& other) const;
+        bool operator>(const UniversityMember& other) const;
+        bool operator<=(const UniversityMember& other) const;
+        bool operator>=(const UniversityMember& other) const;
+        bool operator==(const UniversityMember& other) const;
+        bool operator!=(const UniversityMember& other) const;
 
     protected:
         std::string _fullName;
         std::weak_ptr<Faculty> _faculty;
 };
-
-inline std::ostream& operator<<(std::ostream& os, const UniversityMember& member) {
-    member.printInformation(os);
-    return os;
-}

@@ -50,42 +50,6 @@ void Student::setMarks(std::vector<unsigned int> newMarks) {
     _marks = newMarks;
 }
 
-std::istream& operator>>(std::istream& is, Student& student) {
-    std::cout << "Введите полное имя студента: ";
-    std::getline(is >> std::ws, student._fullName);
-    std::cout << "Введите номер студ. билета: ";
-    std::getline(is, student._studentNumber);
-    std::cout << "Введите номер группы: ";
-    std::getline(is, student._groupNumber);
-    std::cout << "Введите максимальное число часов: ";
-    is >> student._maxHoursPerWeek;
-    return is;
-}
-
-bool Student::operator==(const Student& otherStudent) const {
-    return _studentNumber == otherStudent.getStudentNumber();
-}
-
-bool Student::operator!=(const Student& otherStudent) const {
-    return _studentNumber != otherStudent.getStudentNumber();
-}
-
-bool Student::operator<(const Student& otherStudent) const {
-    return this->calculateMetric() < otherStudent.calculateMetric();
-}
-
-bool Student::operator>(const Student& otherStudent) const {
-    return this->calculateMetric() > otherStudent.calculateMetric();
-}
-
-bool Student::operator>=(const Student& otherStudent) const {
-    return this->calculateMetric() >= otherStudent.calculateMetric();
-}
-
-bool Student::operator<=(const Student& otherStudent) const {
-    return this->calculateMetric() <= otherStudent.calculateMetric();
-}
-
 std::string Student::getType() const {
     return "Student";
 }
@@ -115,4 +79,22 @@ void Student::applyEffect(int value) {
 
     _marks.push_back(static_cast<unsigned int>(value));
     std::cout << "Cтуденту " << _fullName << " успешно выставлена оценка " << value << '\n';
+}
+
+void Student::readFrom(std::istream& is) {
+    std::cout << "Введите полное имя студента: ";
+    std::getline(is >> std::ws, _fullName);
+    std::cout << "Введите номер студ. билета: ";
+    std::getline(is, _studentNumber);
+    std::cout << "Введите номер группы: ";
+    std::getline(is, _groupNumber);
+    std::cout << "Введите максимальное число часов: ";
+    is >> _maxHoursPerWeek;
+}
+
+bool Student::equals(const UniversityMember& other) const {
+    auto* s = dynamic_cast<const Student*>(&other);
+    if (!s) return false;
+
+    return _studentNumber == s->_studentNumber;
 }

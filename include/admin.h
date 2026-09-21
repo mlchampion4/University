@@ -8,10 +8,11 @@
 
 class Administrator : public UniversityMember {
     public:
-        Administrator(std::string_view fullName, std::weak_ptr<Faculty> faculty, std::string_view position, int managedPeople);
+        Administrator(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty, std::string_view position, int managedPeople);
 
         std::string getPosition() const;
         int getManagedPeople() const;
+        int getId() const;
 
         void setPosition(std::string_view newPosition);
         void setManagedPeople(int newManagedPeople);
@@ -20,8 +21,11 @@ class Administrator : public UniversityMember {
         void printInformation(std::ostream& os) const override;
         double calculateMetric() const override;
         void applyEffect(int value) override;
+        void readFrom(std::istream& is) override;
+        bool equals(const UniversityMember& other) const override;
 
     private:
+        int _id;
         std::string _position;
         int _managedPeople;
 };

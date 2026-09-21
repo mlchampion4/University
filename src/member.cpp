@@ -24,3 +24,37 @@ void UniversityMember::setFaculty(const std::weak_ptr<Faculty> newFaculty) {
 double UniversityMember::calculateMetric() const {
     return 0.0;
 }
+
+std::ostream& operator<<(std::ostream& os, const UniversityMember& member) {
+    member.printInformation(os);
+    return os;
+}
+
+std::istream& operator>>(std::istream& is, UniversityMember& member) {
+    member.readFrom(is);
+    return is;
+}
+
+bool UniversityMember::operator<(const UniversityMember& other) const {
+    return this->calculateMetric() < other.calculateMetric();
+}
+
+bool UniversityMember::operator>(const UniversityMember& other) const {
+    return this->calculateMetric() > other.calculateMetric();
+}
+
+bool UniversityMember::operator<=(const UniversityMember& other) const {
+    return this->calculateMetric() <= other.calculateMetric();
+}
+
+bool UniversityMember::operator>=(const UniversityMember& other) const {
+    return this->calculateMetric() >= other.calculateMetric();
+}
+
+bool UniversityMember::operator==(const UniversityMember& other) const {
+    return equals(other);
+}
+
+bool UniversityMember::operator!=(const UniversityMember& other) const {
+    return !(*this == other);
+}
