@@ -8,7 +8,7 @@
 #include "faculty.h"
 
 Administrator::Administrator(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty, std::string_view position, int managedPeople)
-    : UniversityMember(fullName, faculty), _id(id), _position(position), _managedPeople(managedPeople) {}
+    : UniversityMember(id, fullName, faculty), _position(position), _managedPeople(managedPeople) {}
 
 std::string Administrator::getPosition() const {
     return _position;
@@ -16,10 +16,6 @@ std::string Administrator::getPosition() const {
 
 int Administrator::getManagedPeople() const {
     return _managedPeople;
-}
-
-int Administrator::getId() const {
-    return _id;
 }
 
 void Administrator::setPosition(std::string_view newPosition) {
@@ -46,7 +42,7 @@ double Administrator::calculateMetric() const {
 }
 
 void Administrator::applyEffect(int value) {
-    if (value < 0 || value > 5) {
+    if (value < 0 || value > 10) {
         std::cout << "Недопустимое количество новых подчинённых, повторите попытку\n";
         return;
     }
@@ -69,4 +65,8 @@ bool Administrator::equals(const UniversityMember& other) const {
     if (!a) return false;
 
     return _id == a->_id;
+}
+
+std::string Administrator::getMetricName() const {
+    return "Влиятельность";
 }

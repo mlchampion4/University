@@ -61,7 +61,7 @@ void Student::printInformation(std::ostream& os) const {
      << _maxHoursPerWeek << std::endl;
      os << "Оценки: \n";
      for (const auto& s: _marks)
-        os << s << "\n";
+        os << s << " ";
 }
 
 double Student::calculateMetric() const {
@@ -97,4 +97,8 @@ bool Student::equals(const UniversityMember& other) const {
     if (!s) return false;
 
     return _studentNumber == s->_studentNumber;
+}
+
+std::string Student::getMetricName() const {
+    return "Средний балл";
 }

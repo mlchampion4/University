@@ -6,11 +6,18 @@
 #include "faculty.h"
 #include "member.h"
 
+UniversityMember::UniversityMember(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty) :
+    _id(id), _fullName(fullName), _faculty(faculty) {}
+
 UniversityMember::UniversityMember(std::string_view fullName, std::weak_ptr<Faculty> faculty) :
     _fullName(fullName), _faculty(faculty) {}
 
 std::string UniversityMember::getFullName() const {
     return _fullName;
+}
+
+int UniversityMember::getId() const {
+    return _id;
 }
 
 std::weak_ptr<Faculty> UniversityMember::getFaculty() const {

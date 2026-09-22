@@ -17,7 +17,7 @@ class Teacher : public UniversityMember {
         std::shared_ptr<Department> getDepartment() const;
         std::shared_ptr<Subject> getSubject() const;
         int getTeachingLoad() const;
-        int getId() const;
+        int getMaxTeachingLoad() const;
 
         void setDepartment(std::weak_ptr<Department> newDepartment);
         void setSubject(std::shared_ptr<Subject> newSubject);
@@ -28,11 +28,11 @@ class Teacher : public UniversityMember {
         void applyEffect(int value) override;
         void readFrom(std::istream& is) override;
         bool equals(const UniversityMember& other) const override;
+        std::string getMetricName() const override;
 
     private:
-        int _id;
         std::weak_ptr<Department> _department;
         std::shared_ptr<Subject> _subject;
-        int _teachingLoad;
-        int _maxTeachingLoad;
+        int _teachingLoad = 0;
+        int _maxTeachingLoad = 0;
 };

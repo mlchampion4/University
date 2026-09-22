@@ -57,7 +57,7 @@ int main() {
     vector<unique_ptr<UniversityMember>> members;
     members.push_back(make_unique<Student>("Драбудьно Н.Г.", faculty, "55830038", "550501", 30));
     members.push_back(make_unique<Teacher>(1, "Скиба И.Г.", faculty, dept, subj, 50));
-    members.push_back(make_unique<Administrator>(1, "Залупа З.З.", faculty, "Зав. кафедрой ЭВМ", 100));
+    members.push_back(make_unique<Administrator>(1, "Никульшин Б.В.", faculty, "Зав. кафедрой ЭВМ", 4));
 
     do {
         printMenu();
@@ -87,7 +87,7 @@ int main() {
 
                     else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
                         cout << "  Предмет: " << teacher->getSubject()->getSubjectName() << '\n';
-                        cout << "  Нагрузка: " << teacher->getTeachingLoad() << '\n';
+                        cout << "  Макс. нагрузка: " << teacher->getMaxTeachingLoad() << '\n';
                     }
 
                     else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
@@ -108,44 +108,16 @@ int main() {
                 }
                 break;
             case 4:
-                cout << "Унаследованный геттер:\n";
-
                 for (const auto& m : members) {
-                    cout << "--- " << m->getType() << " ---\n";
-        
-                    if (auto* student = dynamic_cast<Student*>(m.get())) {
-                        cout << student->getFullName() << "  " << student->getFaculty().lock()->getFacultyName() << '\n';
-                    }
-
-                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
-                        cout << teacher->getFullName() << "  " << teacher->getFaculty().lock()->getFacultyName() << '\n';
-                    }
-
-                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
-                        cout << admin->getFullName() << "  " << admin->getFaculty().lock()->getFacultyName() << '\n';
-                    }
+                    cout << m->getFullName() << "  " 
+                         << m->getFaculty().lock()->getFacultyName() << '\n';
                 }
                 break;
             case 5:
                 for (const auto& m : members) {
                     cout << "--- " << m->getType() << " ---\n";
-
-                    double metric = m->calculateMetric();
-
-                    if (auto* student = dynamic_cast<Student*>(m.get())) {
-                        cout << student->getFullName() << '\n';
-                        cout << "Средний балл: " << metric << '\n';
-                    }
-
-                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
-                        cout << teacher->getFullName() << '\n';
-                        cout << "Метрика нагрузки: " << metric << '\n';
-                    }
-
-                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
-                        cout << admin->getFullName() << '\n';
-                        cout << "Влиятельность: " << metric << '\n';
-                    }
+                    cout << m->getFullName() << '\n';
+                    cout << m->getMetricName() << ": " << m->calculateMetric() << '\n';
                 }
                 break;
             case 6: {
@@ -167,26 +139,9 @@ int main() {
             }
             case 7:
                 for (const auto& m : members) {
-                    cout << "--- " << m->getType() << " ---\n";
-
-                    if (auto* student = dynamic_cast<Student*>(m.get())) {
-                        student->applyEffect(5);
-                        cout << "Добавлена оценка:\n";
-                        for (auto mark : student->getMarks()) cout << mark << " ";
-                        cout << '\n';
-                    }
-
-                    else if (auto* teacher = dynamic_cast<Teacher*>(m.get())) {
-                        teacher->applyEffect(20);
-                        cout << "Добавлены часы: " << teacher->getTeachingLoad() << '\n';
-                    }
-
-                    else if (auto* admin = dynamic_cast<Administrator*>(m.get())) {
-                        admin->applyEffect(3);
-                        cout << "Добавлены подчинённые: " << admin->getManagedPeople() << '\n';
-                    }
+                    m->applyEffect(5);
                 }
-                break;
+            break;
         }
     } while (choice != 0);
 }

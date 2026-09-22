@@ -9,7 +9,7 @@
 #include "teacher.h"
 
 Teacher::Teacher(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty, std::weak_ptr<Department> department, std::shared_ptr<Subject> subject, int maxTeachingLoad)
-    : UniversityMember(fullName, faculty), _id(id), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {}
+    : UniversityMember(id, fullName, faculty), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {}
 
 std::shared_ptr<Department> Teacher::getDepartment() const {
     return _department.lock();
@@ -29,6 +29,10 @@ void Teacher::setSubject(std::shared_ptr<Subject> newSubject) {
 
 int Teacher::getTeachingLoad() const {
     return _teachingLoad;
+}
+
+int Teacher::getMaxTeachingLoad() const {
+    return _maxTeachingLoad;
 }
 
 std::string Teacher::getType() const {
@@ -67,13 +71,13 @@ void Teacher::readFrom(std::istream& is) {
     is >> _maxTeachingLoad;
 }
 
-int Teacher::getId() const {
-    return _id;
-}
-
 bool Teacher::equals(const UniversityMember& other) const {
     auto* t = dynamic_cast<const Teacher*>(&other);
     if (!t) return false;
 
     return _id == t->_id;
+}
+
+std::string Teacher::getMetricName() const {
+    return "Метрика нагрузки";
 }

@@ -34,6 +34,7 @@ class Student : public UniversityMember {
         void applyEffect(int value) override;
         void readFrom(std::istream& is) override;
         bool equals(const UniversityMember& other) const override;
+        std::string getMetricName() const override;
 
     private:
         std::string _studentNumber;
