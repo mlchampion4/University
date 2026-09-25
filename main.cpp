@@ -52,6 +52,7 @@ void printMenu() {
     cout << "12. Поиск по критерию\n";
     cout << "13. Средняя метрика\n";
     cout << "14. Сортировка по условию\n";
+    cout << "15. Вывод коллекции\n";
     cout << "0. Выход\n";
     cout << "===========================\n";
 }
@@ -249,6 +250,15 @@ int main() {
                 }
                 break;
             }
+
+            case 15:
+                cout << "UniversityMember\n";
+                members.print(cout);
+
+                cout << "Subject\n";
+                for (const auto& s : subjects) {
+                    s->printSubjectInformation();
+                }
         }
     } while (choice != 0);
 }
