@@ -5,12 +5,18 @@
 #include <memory>
 #include "faculty.h"
 #include "member.h"
+#include "exceptions.h"
 
 UniversityMember::UniversityMember(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty) :
-    _id(id), _fullName(fullName), _faculty(faculty) {}
+    _id(id), _fullName(fullName), _faculty(faculty) {
+        if (fullName.empty()) throw InvalidDataException("ФИО не может быть пустым");
+        if (id < 0) throw InvalidDataException("id не может быть отрицательным");
+    }
 
 UniversityMember::UniversityMember(std::string_view fullName, std::weak_ptr<Faculty> faculty) :
-    _fullName(fullName), _faculty(faculty) {}
+    _fullName(fullName), _faculty(faculty) {
+        if (fullName.empty()) throw InvalidDataException("ФИО не может быть пустым");
+    }
 
 std::string UniversityMember::getFullName() const {
     return _fullName;
@@ -25,6 +31,7 @@ std::weak_ptr<Faculty> UniversityMember::getFaculty() const {
 }
 
 void UniversityMember::setFaculty(const std::weak_ptr<Faculty> newFaculty) {
+    if (newFaculty.expired() && !newFaculty.lock()) throw ObjectNotFoundException("Нельзя привязать члена университета к несуществующему факультету");
     _faculty = newFaculty;
 }
 

@@ -3,9 +3,13 @@
 #include <vector>
 #include <string_view>
 #include "subject.h"
+#include "exceptions.h"
 
 Subject::Subject(std::string_view subjectName, unsigned int hours, ControlType controlType)
-    : _subjectName(subjectName), _hours(hours), _controlType(controlType) {}
+    : _subjectName(subjectName), _hours(hours), _controlType(controlType) {
+        if (subjectName.empty()) throw InvalidDataException("Название предмета не может быть пустым");
+        if (hours == 0) throw InvalidDataException("Количество часов должно быть больше нуля");
+    }
 
 std::ostream& operator<<(std::ostream& os, ControlType ct) {
     switch(ct) {
@@ -29,10 +33,13 @@ ControlType Subject::getControlType() const {
 }
 
 void Subject::setHours(unsigned int newHours) {
+    if (newHours == 0) throw InvalidDataException("Количество часов не может быть нулевым");
     _hours = newHours;
 }
 
 void Subject::setControlType(ControlType newControlType) {
+    if (newControlType != CREDIT && newControlType != GRADEDCREDIT && newControlType != EXAM)
+        throw InvalidOperationException("Недопустимый тип контроля");
     _controlType = newControlType;
 }
 

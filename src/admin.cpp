@@ -6,9 +6,13 @@
 #include "member.h"
 #include "admin.h"
 #include "faculty.h"
+#include "exceptions.h"
 
 Administrator::Administrator(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty, std::string_view position, int managedPeople)
-    : UniversityMember(id, fullName, faculty), _position(position), _managedPeople(managedPeople) {}
+    : UniversityMember(id, fullName, faculty), _position(position), _managedPeople(managedPeople) {
+        if (position.empty()) throw InvalidDataException("Должность не может быть пустой");
+        if (managedPeople < 0) throw InvalidDataException("Количество подчинённых не может быть отрицательным");
+    }
 
 std::string Administrator::getPosition() const {
     return _position;
@@ -23,6 +27,7 @@ void Administrator::setPosition(std::string_view newPosition) {
 }
 
 void Administrator::setManagedPeople(int newManagedPeople) {
+    if (newManagedPeople < 0) throw InvalidDataException("Количество подчинённых не может быть отрицательным");
     _managedPeople = newManagedPeople;
 }
 
@@ -42,10 +47,8 @@ double Administrator::calculateMetric() const {
 }
 
 void Administrator::applyEffect(int value) {
-    if (value < 0 || value > 10) {
-        std::cout << "Недопустимое количество новых подчинённых, повторите попытку\n";
-        return;
-    }
+    if (value < 0 || value > 10) throw InvalidDataException("Недопустимое количество новых подчинённых: " +
+            std::to_string(value));
 
     _managedPeople += value;
     std::cout << "Администратору " << _fullName << " успешно добавлены подчинённые " << value << '\n';

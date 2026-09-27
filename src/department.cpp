@@ -6,9 +6,13 @@
 #include "faculty.h"
 #include "teacher.h"
 #include "department.h"
+#include "exceptions.h"
 
 Department::Department(std::string_view departmentName, std::shared_ptr<Faculty> faculty)
-    : _departmentName(departmentName), _faculty(faculty) {}
+    : _departmentName(departmentName), _faculty(faculty) {
+        if (departmentName.empty()) throw InvalidDataException("Название кафедры не может быть пустым");
+        if (!faculty) throw InvalidDataException("Факультет не может быть null");
+    }
 
 std::string_view Department::getDepartmentName() const {
     return _departmentName;
@@ -23,10 +27,16 @@ std::vector<std::shared_ptr<Teacher>> Department::getTeachingStaff() const {
 }
 
 void Department::setDepartmentName(std::string_view newDepartmentName) {
+    if (newDepartmentName.empty()) throw InvalidDataException("Название кафедры не может быть пустым");
     _departmentName = newDepartmentName;
 }
 
 void Department::addTeacher(std::shared_ptr<Teacher> newTeacher) {
+    if (!newTeacher) throw InvalidDataException("Преподаватель не может быть null");
+    for (const auto& t : _teachingStaff) {
+        if (t && t->getId() == newTeacher->getId()) throw DuplicateIdException("Преподаватель с ID " +
+                std::to_string(newTeacher->getId()) + " уже есть на кафедре");
+    }
     _teachingStaff.push_back(newTeacher);
 }
 

@@ -6,9 +6,11 @@
 #include <numeric>
 #include <iostream>
 #include "collection.h"
+#include "exceptions.h"
 
 template <typename T>
 std::shared_ptr<T> maxByMetric(const Collection<T>& collection) {
+    if (collection.size() == 0) throw ObjectNotFoundException("Коллекция пуста, невозможно найти максимум");
     std::shared_ptr<T> best = nullptr;
     for (const auto& item : collection) {
         if (!item) continue;
@@ -16,12 +18,13 @@ std::shared_ptr<T> maxByMetric(const Collection<T>& collection) {
             best = item;
         }
     }
+    if (!best) throw ObjectNotFoundException("В коллекции нет валидных элементов");
     return best;
 }
 
 template <typename T>
 double averageMetric(const Collection<T>& collection) {
-    if (collection.size() == 0) return 0.0;
+    if (collection.size() == 0) throw ObjectNotFoundException("Коллекция пуста, невозможно вычислить среднее");
 
     double sum = 0.0;
     size_t count = 0;
@@ -31,7 +34,8 @@ double averageMetric(const Collection<T>& collection) {
             ++count;
         }
     }
-    return (count > 0) ? sum / count : 0.0;
+    if (count == 0) throw ObjectNotFoundException("В коллекции нет валидных элементов");
+    return sum / count;
 }
 
 template <typename T, typename Comparator>

@@ -1,5 +1,6 @@
 #pragma once
 #include "collection.h"
+#include "exceptions.h"
 #include <algorithm>
 
 template <typename T>
@@ -9,14 +10,15 @@ const std::vector<std::shared_ptr<T>>& Collection<T>::getItems() const {
 
 template <typename T>
 void Collection<T>::add(const std::shared_ptr<T>& item) {
+    if (!item) throw InvalidDataException("Нельзя добавить пустой элемент в коллекцию");
     _items.push_back(item);
 }
 
 template <typename T>
 void Collection<T>::removeAt(size_t index) {
     if (index >= _items.size()) {
-        std::cout << "Индекс за пределами коллекции\n";
-        return;
+        throw OutOfRangeException("Индекс " + std::to_string(index) +
+            " вне диапазона [0, " + std::to_string(_items.size()) + ")");
     }
     _items.erase(_items.begin() + index);
 }
@@ -38,8 +40,8 @@ size_t Collection<T>::removeIf(Predicate pred) {
 template <typename T>
 std::shared_ptr<T> Collection<T>::get(size_t index) const {
     if (index >= _items.size()) {
-        std::cout << "Индекс за пределами коллекции\n";
-        return nullptr;
+        throw OutOfRangeException("Индекс " + std::to_string(index) +
+            " вне диапазона [0, " + std::to_string(_items.size()) + ")");
     }
     return _items[index];
 }
@@ -53,7 +55,8 @@ std::shared_ptr<T> Collection<T>::find(Predicate pred) const {
             return item && pred(*item);
         }
     );
-    return (it != _items.end()) ? *it : nullptr;
+    if (it == _items.end()) throw ObjectNotFoundException("Элемент, удовлетворяющий предикату, не найден");
+    return *it;
 }
 
 template <typename T>

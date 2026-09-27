@@ -6,9 +6,14 @@
 #include "faculty.h"
 #include "student.h"
 #include "member.h"
+#include "exceptions.h"
 
 Student::Student(std::string_view fullName, std::weak_ptr<Faculty> faculty, std::string_view studentNumber, std::string_view groupNumber, unsigned int maxHoursPerWeek)
-    : UniversityMember(fullName, faculty), _studentNumber(studentNumber), _groupNumber(groupNumber), _maxHoursPerWeek(maxHoursPerWeek), _hours(maxHoursPerWeek) {}
+    : UniversityMember(fullName, faculty), _studentNumber(studentNumber), _groupNumber(groupNumber), _maxHoursPerWeek(maxHoursPerWeek), _hours(maxHoursPerWeek) {
+        if (studentNumber.empty()) throw InvalidDataException("Номер студ.билета не может быть пустым");
+        if (groupNumber.empty()) throw InvalidDataException("Номер группы не может быть пустым");
+        if (maxHoursPerWeek == 0) throw InvalidOperationException("Макс. часы должны быть больше 0");
+    }
 
 std::string Student::getStudentNumber() const {
     return _studentNumber;
@@ -39,14 +44,21 @@ void Student::setStudentNumber(std::string_view newStudentNumber) {
 }
 
 void Student::setHours(unsigned int newHours) {
+    if (newHours > _maxHoursPerWeek) throw LimitExceededException("Часы (" + std::to_string(newHours) +
+            ") превышают максимум (" + std::to_string(_maxHoursPerWeek) + ")");
     _hours = newHours;
 }
 
 void Student::setMaxHoursPerWeek(unsigned int newMaxHoursPerWeek) {
+    if (newMaxHoursPerWeek == 0) throw InvalidDataException("Макс. часы должеы быть больше 0");
     _maxHoursPerWeek = newMaxHoursPerWeek;
 }
 
 void Student::setMarks(std::vector<unsigned int> newMarks) {
+    for (const auto& m : newMarks) {
+        if (m > 10) throw InvalidDataException("Оценка " + std::to_string(m) +
+                " выходит за пределы 0..10");
+    }
     _marks = newMarks;
 }
 
@@ -72,10 +84,8 @@ double Student::calculateMetric() const {
 }
 
 void Student::applyEffect(int value) {
-    if (value < 0 || value > 10) {
-        std::cout << "Введенное число не является оценкой, повторите попытку\n";
-        return;
-    }
+    if (value < 0 || value > 10) throw InvalidDataException("Значение " + std::to_string(value) +
+            " не является допустимой оценкой (0..10)");
 
     _marks.push_back(static_cast<unsigned int>(value));
     std::cout << "Cтуденту " << _fullName << " успешно выставлена оценка " << value << '\n';

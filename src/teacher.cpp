@@ -7,9 +7,13 @@
 #include "department.h"
 #include "subject.h"
 #include "teacher.h"
+#include "exceptions.h"
 
 Teacher::Teacher(int id, std::string_view fullName, std::weak_ptr<Faculty> faculty, std::weak_ptr<Department> department, std::shared_ptr<Subject> subject, int maxTeachingLoad)
-    : UniversityMember(id, fullName, faculty), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {}
+    : UniversityMember(id, fullName, faculty), _department(department), _subject(subject), _maxTeachingLoad(maxTeachingLoad) {
+        if (!subject) throw InvalidDataException("Преподаватель не может быть без предмета");
+        if (maxTeachingLoad <= 0) throw InvalidDataException("Макс.нагрузка не должна быть отрицательной");
+    }
 
 std::shared_ptr<Department> Teacher::getDepartment() const {
     return _department.lock();
@@ -20,10 +24,12 @@ std::shared_ptr<Subject> Teacher::getSubject() const {
 }
 
 void Teacher::setDepartment(std::weak_ptr<Department> newDepartment) {
+    if (newDepartment.expired() && !newDepartment.lock()) throw ObjectNotFoundException("Нельзя привязать преподавателя к несуществующей кафедре");
     _department = newDepartment;
 }
 
 void Teacher::setSubject(std::shared_ptr<Subject> newSubject) {
+    if (!newSubject) throw InvalidDataException("Нельзя поставить несуществующий предмет");
     _subject = newSubject;
 }
 
@@ -51,17 +57,15 @@ double Teacher::calculateMetric() const {
 }
 
 void Teacher::applyEffect(int value) {
-    if (value < 0) {
-        std::cout << "Нельзя уменьшать нагрузку!\n";
-        return;
-    }
-    if (_teachingLoad + value > _maxTeachingLoad) {
-        std::cout << "Поставить новые часы нельзя! Нагрузка слишком большая\n";
-        return;
-    } else {
-        _teachingLoad += value;
-        std::cout << "Преподавателю " << _fullName << " успешно добавлены часы " << value << '\n';
-    }
+    if (value < 0) throw InvalidDataException("Нельзя уменьшать нагрузку (значение " +
+            std::to_string(value) + ")");
+
+    if (_teachingLoad + value > _maxTeachingLoad) throw LimitExceededException("Нагрузка " +
+            std::to_string(_teachingLoad + value) +
+            " превышает максимум " + std::to_string(_maxTeachingLoad));
+            
+    _teachingLoad += value;
+    std::cout << "Преподавателю " << _fullName << " успешно добавлены часы " << value << '\n';
 }
 
 void Teacher::readFrom(std::istream& is) {
