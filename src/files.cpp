@@ -271,8 +271,10 @@ void StorageManager::logAction(const std::string& logFilename, const std::string
     }
 
     std::time_t now = std::time(nullptr);
+    std::tm timeInfo;
+    localtime_s(&timeInfo, &now);
     char buf[100];
-    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeInfo);
 
     ofs << "[" << buf << "] " << action << "\n";
     ofs.close();
