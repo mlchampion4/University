@@ -15,6 +15,7 @@
 #include "algs.h"
 #include "exceptions.h"
 #include "files.h"
+#include "analytics.h"
 
 using namespace std;
 
@@ -69,25 +70,39 @@ void createTestSystem() {
 
     auto s1 = make_shared<Student>("Иванов И.И.", f1, "ST001", "Гр-1", 30);
     s1->setMarks({9, 8, 10});
+    auto s2 = make_shared<Student>("Безруких Т.Н.", f1, "ST006", "Гр-1", 30);
+    s2->setMarks({6, 8, 7});
 
-    auto s2 = make_shared<Student>("Петров П.П.", f1, "ST002", "Гр-2", 30);
-    s2->setMarks({7, 6});
+    auto s3 = make_shared<Student>("Петров П.П.", f1, "ST002", "Гр-2", 30);
+    s3->setMarks({7, 6});
+    auto s4 = make_shared<Student>("Драбудько Н.г.", f1, "ST003", "Гр-2", 30);
+    s4->setMarks({4, 10, 7});
 
     globalData.members.add(s1);
     globalData.members.add(s2);
+    globalData.members.add(s3);
+    globalData.members.add(s4);
+
     *f1 += s1;
     *f1 += s2;
+    *f1 += s3;
+    *f1 += s4;
 
-    auto t1 = make_shared<Teacher>(1, "Сидоров С.С.", f1, d1, subj1, 200);
+    auto t1 = make_shared<Teacher>(1, "Сидоров С.С.", f1, d1, subj2, 200);
     t1->applyEffect(50);
 
     auto t2 = make_shared<Teacher>(2, "Скиба И.Г.", f1, d1, subj1, 150);
-    t2->applyEffect(60);
+    t2->applyEffect(110);
+
+    auto t3 = make_shared<Teacher>(3, "Ковальчук А.М.", f1, d1, subj1, 250);
+    t3->applyEffect(200);
 
     globalData.members.add(t1);
     globalData.members.add(t2);
+    globalData.members.add(t3);
     d1->addTeacher(t1);
     d1->addTeacher(t2);
+    d1->addTeacher(t3);
 
     auto a1 = make_shared<Administrator>(1, "Смирнова А.А.", f1, "Декан", 5);
     globalData.members.add(a1);
@@ -148,6 +163,13 @@ void printMenu() {
     cout << "4. Сформировать отчет\n";
     cout << "5. Создать тестовую систему\n";
     cout << "6. Вывод текущей системы\n";
+    cout << "ЛР 8:\n";
+    cout << "7. Группировка студентов по группам\n";
+    cout << "8. Топ-N студентов по успеваемости\n";
+    cout << "9. Подсчет преподавателей с определенной нагрузкой\n";
+    cout << "10. Мин/Макс балл студентов\n";
+    cout << "11. Поиск уникальных предметов у преподавателей\n";
+    cout << "12. Посчитать среднюю нагрузку преподавателей\n";
     cout << "0. Выход\n";
     cout << "===========================\n";
 }
@@ -201,6 +223,24 @@ int main() {
                 break;
             case 6:
                 printCurrentState();
+                break;
+            case 7:
+                UniversityAnalytics::groupStudentsByGroup(globalData.members);
+                break;
+            case 8:
+                UniversityAnalytics::findTopStudents(globalData.members, 3);
+                break;
+            case 9:
+                UniversityAnalytics::countTeachersByLoad(globalData.members, 100);
+                break;
+            case 10:
+                UniversityAnalytics::findMinMaxMetrics(globalData.members);
+                break;
+            case 11:
+                UniversityAnalytics::listUniqueSubjects(globalData.members);
+                break;
+            case 12:
+                UniversityAnalytics::calculateAverageLoad(globalData.members);
                 break;
         }
     } while (choice != 0);
