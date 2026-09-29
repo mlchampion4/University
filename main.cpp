@@ -14,14 +14,16 @@
 #include "collection.h"
 #include "algs.h"
 #include "exceptions.h"
+#include "files.h"
 
 using namespace std;
+
+UniversityData globalData;
 
 int inputInt(string_view message) {
     string input;
     int number;
     char extra;
-
     while (true) {
         cout << message.data();
         getline(cin, input);
@@ -34,16 +36,118 @@ int inputInt(string_view message) {
     }
 }
 
+string inputString(string_view message) {
+    string input;
+    cout << message.data();
+    getline(cin, input);
+    return input;
+}
+
+void createTestSystem() {
+    globalData.faculties.clear();
+    globalData.departments.clear();
+    globalData.subjects.clear();
+    globalData.members.clear();
+
+    auto f1 = make_shared<Faculty>("ФКСиС", 100);
+    auto f2 = make_shared<Faculty>("ФЭМ", 50);
+    globalData.faculties.push_back(f1);
+    globalData.faculties.push_back(f2);
+
+    auto subj1 = make_shared<Subject>("ОАиП", 120, EXAM);
+    auto subj2 = make_shared<Subject>("Математика", 100, CREDIT);
+    globalData.subjects.push_back(subj1);
+    globalData.subjects.push_back(subj2);
+
+    auto d1 = make_shared<Department>("Кафедра ИТ", f1);
+    auto d2 = make_shared<Department>("Кафедра Высшей математики", f2);
+    globalData.departments.push_back(d1);
+    globalData.departments.push_back(d2);
+
+    *f1 += d1;
+    *f2 += d2;
+
+    auto s1 = make_shared<Student>("Иванов И.И.", f1, "ST001", "Гр-1", 30);
+    s1->setMarks({9, 8, 10});
+
+    auto s2 = make_shared<Student>("Петров П.П.", f1, "ST002", "Гр-2", 30);
+    s2->setMarks({7, 6});
+
+    globalData.members.add(s1);
+    globalData.members.add(s2);
+    *f1 += s1;
+    *f1 += s2;
+
+    auto t1 = make_shared<Teacher>(1, "Сидоров С.С.", f1, d1, subj1, 200);
+    t1->applyEffect(50);
+
+    auto t2 = make_shared<Teacher>(2, "Скиба И.Г.", f1, d1, subj1, 150);
+    t2->applyEffect(60);
+
+    globalData.members.add(t1);
+    globalData.members.add(t2);
+    d1->addTeacher(t1);
+    d1->addTeacher(t2);
+
+    auto a1 = make_shared<Administrator>(1, "Смирнова А.А.", f1, "Декан", 5);
+    globalData.members.add(a1);
+
+    auto a2 = make_shared<Administrator>(2, "Никульшин Б.В.", f1, "Зав.Кафедрой", 10);
+    globalData.members.add(a2);
+
+    cout << "Тестовая система создана. Объектов: "
+         << globalData.faculties.size() << " фак., "
+         << globalData.members.size() << " чел.\n";
+}
+
+void printCurrentState() {
+    cout << "\n--- ТЕКУЩЕЕ СОСТОЯНИЕ СИСТЕМЫ ---\n";
+
+    cout << "Факультеты:\n";
+    for (const auto& f : globalData.faculties) {
+        cout << " - " << f->getFacultyName()
+             << " (макс. " << f->getMaxStudentsCount() << ")\n";
+    }
+
+    cout << "Кафедры:\n";
+    for (const auto& d : globalData.departments) {
+        cout << " - " << d->getDepartmentName()
+             << " (" << d->getFaculty()->getFacultyName() << ")\n";
+    }
+
+    cout << "Предметы:\n";
+    for (const auto& s : globalData.subjects) {
+        cout << " - " << s->getSubjectName()
+             << " (" << s->getHours() << " ч.)\n";
+    }
+
+    cout << "Участники:\n";
+    for (const auto& m : globalData.members) {
+        if (m) {
+            cout << " - [" << m->getType() << "] " << m->getFullName();
+
+            if (m->getType() == "Student") {
+                auto s = dynamic_pointer_cast<Student>(m);
+                cout << " (Номер билета: " << s->getStudentNumber() << ")";
+            } else {
+                cout << " (ID: " << m->getId() << ")";
+            }
+             cout << '\n';
+        }
+    }
+
+    cout << "--------------------------------\n";
+}
+
 void printMenu() {
     cout << "\n========== МЕНЮ ==========\n";
-    cout << "ЛР 6:\n";
-    cout << "1. InvalidDataException\n";
-    cout << "2. LimitExceededException\n";
-    cout << "3. DuplicateException\n";
-    cout << "4. ObjectNotFoundException\n";
-    cout << "5. OutOfRangeException\n";
-    cout << "6. InvalidOperationException\n";
-    cout << "7. RelationException\n";;
+    cout << "ЛР 7:\n";
+    cout << "1. Сохранить состояние в файл\n";
+    cout << "2. Загрузить состояние из файла\n";
+    cout << "3. Добавить запись в журнал\n";
+    cout << "4. Сформировать отчет\n";
+    cout << "5. Создать тестовую систему\n";
+    cout << "6. Вывод текущей системы\n";
     cout << "0. Выход\n";
     cout << "===========================\n";
 }
@@ -52,90 +156,52 @@ void printMenu() {
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
     int choice;
+    string filename = "data.txt";
+    string reportFilename = "report.txt";
 
     do {
         printMenu();
         choice = inputInt("Выберите пункт меню: ");
 
         switch (choice) {
-            case 1: {
+            case 1:
                 try {
-                    auto faculty = make_shared<Faculty>("ФКСиС", 150);
-                    auto stud = make_shared<Student>("", faculty, "56", "5505051", 67);
-                } catch (const InvalidDataException& e) {
-                    cout << e.what() << '\n';
+                    StorageManager::saveState(filename, globalData);
+                    StorageManager::logAction("journal.log", "Сохранение состояния в файл " + filename);
+                } catch (const exception& e) {
+                    cerr << "Ошибка сохранения: " << e.what() << '\n';
                 }
                 break;
-            }
-            case 2: {
+            case 2:
                 try {
-                    auto faculty = make_shared<Faculty>("ФКСиС", 150);
-                    auto stud = make_shared<Student>("A", faculty, "55830038", "5505051", 67);
-                    stud->setHours(100);
-                } catch (const LimitExceededException& e) {
-                    cout << e.what() << '\n';
+                    StorageManager::loadState(filename, globalData);
+                    StorageManager::logAction("journal.log", "Загрузка состояния из файла " + filename);
+                } catch (const exception& e) {
+                    cerr << "Ошибка загрузки: " << e.what() << '\n';
                 }
                 break;
-            }
             case 3: {
-                try {
-                    auto faculty = make_shared<Faculty>("ФКСиС", 100);
-                    auto s1 = make_shared<Student>("Puto", faculty, "55", "551", 20);
-                    auto s2 = make_shared<Student>("Vaflya", faculty, "55", "551", 20);
-                    cout << *s1 << '\n' << *s2 << '\n';
-                    *faculty += s1;
-                    *faculty += s2;
-                } catch (const DuplicateIdException& e) {
-                    cout << e.what() << '\n';
+                string action = inputString("Введите текст для журнала: ");
+                if (!action.empty()) {
+                    StorageManager::logAction("journal.log", action);
+                    cout << "Запись добавлена в journal.log\n";
                 }
                 break;
             }
-            case 4: {
+            case 4:
                 try {
-                    Collection<UniversityMember> empty;
-                    empty.print(cout);
-                    auto f = empty.find([](const UniversityMember& a) {
-                        return a.getFullName() == "A";
-                    });
-                } catch (const ObjectNotFoundException& e) {
-                    cout << e.what() << '\n';
+                    StorageManager::generateReport(reportFilename, globalData);
+                    StorageManager::logAction("journal.log", "Сформирован отчёт " + filename);
+                } catch (const exception& e) {
+                    cerr << "Ошибка создания отчёта: " << e.what() << '\n';
                 }
                 break;
-            }
-            case 5: {
-                try {
-                    Collection<Subject> subs;
-                    subs.add(make_shared<Subject>("ABAB", 20, EXAM));
-                    auto s = subs.get(10);
-                } catch (const OutOfRangeException& e) {
-                    cout << e.what() << '\n';
-                }
+            case 5:
+                createTestSystem();
                 break;
-            }
-            case 6: {
-                try {
-                    auto subj = make_shared<Subject>("LALA", 10, CREDIT);
-                    subj->setControlType(static_cast<ControlType>(999));
-                } catch (const InvalidOperationException& e) {
-                    cout << e.what() << '\n';
-                }
+            case 6:
+                printCurrentState();
                 break;
-            }
-            case 7: {
-                try {
-                    auto faculty = make_shared<Faculty>("SIS", 20);
-                    auto dept = make_shared<Department>("FA", faculty);
-                    auto subj = make_shared<Subject>("JAVA", 150, EXAM);
-                    auto t = make_shared<Teacher>(1, "Puto", faculty, dept, subj, 300);
-                    dept->addTeacher(t);
-                    dept->printDepartmentInformation();
-                    *faculty += dept;
-                    *faculty -= dept;
-                } catch (const RelationException& e) {
-                    cout << e.what() << '\n';
-                }
-                break;
-            }
         }
     } while (choice != 0);
 }

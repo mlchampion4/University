@@ -38,7 +38,7 @@ class UniversityMember {
         bool operator!=(const UniversityMember& other) const;
 
     protected:
-        int _id;
+        int _id = 0;
         std::string _fullName;
         std::weak_ptr<Faculty> _faculty;
 };
