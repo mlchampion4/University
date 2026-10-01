@@ -110,146 +110,110 @@ void StorageManager::saveState(const std::string& filename, const UniversityData
 
 void StorageManager::loadState(const std::string& filename, UniversityData& data) {
     std::ifstream ifs(filename);
-    if (!ifs.is_open()) {
-        throw InvalidOperationException("Не удалось открыть файл для чтения: " + filename);
-    }
+    if (!ifs.is_open()) throw InvalidOperationException("Файл не открылся");
 
     data.faculties.clear();
     data.departments.clear();
     data.subjects.clear();
     data.members.clear();
 
-    std::string line;
-    std::string currentSection;
-
-    std::map<int, std::shared_ptr<Faculty>> facultyMap;
-    std::map<int, std::shared_ptr<Subject>> subjectMap;
-    std::map<int, std::shared_ptr<Department>> departmentMap;
+    std::string line, currentSection;
 
     while (std::getline(ifs, line)) {
         line = trim(line);
         if (line.empty()) continue;
+        if (line[0] == '[') { currentSection = line; continue; }
 
-        if (line[0] == '[') {
-            currentSection = line;
-            continue;
-        }
-
-        std::vector<std::string> tokens = split(line, '|');
+        auto tokens = split(line, '|');
 
         try {
             if (currentSection == "[FACULTIES]") {
-                if (tokens.size() < 3) continue;
-                int id = std::stoi(tokens[0]);
-                std::string name = tokens[1];
-                unsigned int maxStudents = std::stoul(tokens[2]);
-
-                if (facultyMap.count(id)) throw DuplicateIdException("Дублирующийся ID факультета: " + std::to_string(id));
-
-                auto fac = std::make_shared<Faculty>(name, maxStudents);
-                data.faculties.push_back(fac);
-                facultyMap[id] = fac;
+                data.faculties.push_back(
+                    std::make_shared<Faculty>(tokens[1], std::stoul(tokens[2]))
+                );
             }
+
             else if (currentSection == "[SUBJECTS]") {
-                if (tokens.size() < 4) continue;
-                int id = std::stoi(tokens[0]);
-                std::string name = tokens[1];
-                unsigned int hours = std::stoul(tokens[2]);
-                int ctInt = std::stoi(tokens[3]);
-                ControlType ct = static_cast<ControlType>(ctInt);
-
-                if (subjectMap.count(id)) throw DuplicateIdException("Дублирующийся ID предмета: " + std::to_string(id));
-
-                auto subj = std::make_shared<Subject>(name, hours, ct);
-                data.subjects.push_back(subj);
-                subjectMap[id] = subj;
+                data.subjects.push_back(
+                    std::make_shared<Subject>(
+                        tokens[1],
+                        std::stoul(tokens[2]),
+                        static_cast<ControlType>(std::stoi(tokens[3]))
+                    )
+                );
             }
+
             else if (currentSection == "[DEPARTMENTS]") {
-                if (tokens.size() < 3) continue;
-                int id = std::stoi(tokens[0]);
-                std::string name = tokens[1];
                 int facId = std::stoi(tokens[2]);
-                
-                if (departmentMap.count(id)) throw DuplicateIdException("Дублирующийся ID кафедры: " + std::to_string(id));
+                if (facId < 0 || facId >= (int)data.faculties.size())
+                    throw InvalidDataException("Кафедра ссылается на несуществующий факультет ID=" + std::to_string(facId));
 
-                if (facultyMap.find(facId) == facultyMap.end()) throw RelationException("Кафедра ссылается на несуществующий факультет ID: " + std::to_string(facId));
-
-                auto dept = std::make_shared<Department>(name, facultyMap[facId]);
-                data.departments.push_back(dept);
-                departmentMap[id] = dept;
+                data.departments.push_back(
+                    std::make_shared<Department>(tokens[1], data.faculties[facId])
+                );
             }
-            else if (currentSection == "[MEMBERS]") {
-                std::string type = tokens[0];
-                if (tokens.size() < 4) continue;
 
-                int id = std::stoi(tokens[1]);
-                std::string name = tokens[2];
+            else if (currentSection == "[MEMBERS]") {
+                const std::string& type = tokens[0];
                 int facId = std::stoi(tokens[3]);
 
                 std::weak_ptr<Faculty> facWeak;
                 if (facId != -1) {
-                    if (facultyMap.find(facId) == facultyMap.end()) {
-                        throw InvalidDataException("Участник ссылается на несуществующий факультет ID: " + std::to_string(facId));
-                    }
-                    facWeak = facultyMap[facId];
+                    if (facId < 0 || facId >= (int)data.faculties.size())
+                        throw InvalidDataException("Участник ссылается на несуществующий факультет ID=" + std::to_string(facId));
+                    facWeak = data.faculties[facId];
                 }
 
                 if (type == "Student") {
-                    std::string studentNum = tokens[4];
-                    std::string groupNum = tokens[5];
-                    unsigned int maxHours = std::stoul(tokens[6]);
-
-                    auto student = std::make_shared<Student>(name, facWeak, studentNum, groupNum, maxHours);
+                    auto student = std::make_shared<Student>(
+                        tokens[2], facWeak, tokens[4], tokens[5], std::stoul(tokens[6])
+                    );
 
                     if (tokens.size() > 7 && !tokens[7].empty()) {
                         unsigned int currentHours = std::stoul(tokens[7]);
-                        if (currentHours != maxHours) {
+                        if (currentHours != std::stoul(tokens[6])) {
                             student->setHours(currentHours);
                         }
                     }
 
                     if (tokens.size() > 8 && !tokens[8].empty()) {
                         std::vector<unsigned int> marks;
-                        auto markStrs = split(tokens[8], ',');
-                        for (const auto& ms : markStrs) {
+                        for (const auto& ms : split(tokens[8], ',')) {
                             if (!ms.empty()) marks.push_back(std::stoul(ms));
                         }
                         student->setMarks(marks);
                     }
 
                     data.members.add(student);
-                    if (auto f = facWeak.lock()) {
-                        *f += student;
-                    }
+                    if (auto f = facWeak.lock()) *f += student;
                 }
+
                 else if (type == "Teacher") {
                     int deptId = std::stoi(tokens[4]);
                     int subjId = std::stoi(tokens[5]);
-                    int maxLoad = std::stoi(tokens[6]);
-                    int currentLoad = std::stoi(tokens[7]);
 
-                    if (departmentMap.find(deptId) == departmentMap.end()) {
-                        throw RelationException("Преподаватель ссылается на несуществующую кафедру ID: " + std::to_string(deptId));
-                    }
-                    if (subjectMap.find(subjId) == subjectMap.end()) {
-                        throw RelationException("Преподаватель ссылается на несуществующий предмет ID: " + std::to_string(subjId));
-                    }
+                    if (deptId < 0 || deptId >= (int)data.departments.size())
+                        throw InvalidDataException("Преподаватель ссылается на несуществующую кафедру ID=" + std::to_string(deptId));
+                    if (subjId < 0 || subjId >= (int)data.subjects.size())
+                        throw InvalidDataException("Преподаватель ссылается на несуществующий предмет ID=" + std::to_string(subjId));
 
                     auto teacher = std::make_shared<Teacher>(
-                        id, name, facWeak, departmentMap[deptId], subjectMap[subjId], maxLoad);
-
-                    if (currentLoad > 0) {
-                        teacher->applyEffect(currentLoad);
-                    }
+                        std::stoi(tokens[1]), tokens[2], facWeak,
+                        data.departments[deptId], data.subjects[subjId],
+                        std::stoi(tokens[6])
+                    );
+                    int currentLoad = std::stoi(tokens[7]);
+                    if (currentLoad > 0) teacher->applyEffect(currentLoad);
 
                     data.members.add(teacher);
-                    departmentMap[deptId]->addTeacher(teacher);
+                    data.departments[deptId]->addTeacher(teacher);
                 }
-                else if (type == "Administrator") {
-                    std::string position = tokens[4];
-                    int managed = std::stoi(tokens[5]);
 
-                    auto admin = std::make_shared<Administrator>(id, name, facWeak, position, managed);
+                else if (type == "Administrator") {
+                    auto admin = std::make_shared<Administrator>(
+                        std::stoi(tokens[1]), tokens[2], facWeak,
+                        tokens[4], std::stoi(tokens[5])
+                    );
                     data.members.add(admin);
                 }
             }
@@ -259,9 +223,6 @@ void StorageManager::loadState(const std::string& filename, UniversityData& data
             throw;
         }
     }
-
-    ifs.close();
-    std::cout << "Данные успешно загружены из " << filename << std::endl;
 }
 
 void StorageManager::logAction(const std::string& logFilename, const std::string& action) {
