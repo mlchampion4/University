@@ -146,7 +146,7 @@ void StorageManager::loadState(const std::string& filename, UniversityData& data
             else if (currentSection == "[DEPARTMENTS]") {
                 int facId = std::stoi(tokens[2]);
                 if (facId < 0 || facId >= (int)data.faculties.size())
-                    throw InvalidDataException("Кафедра ссылается на несуществующий факультет ID=" + std::to_string(facId));
+                    throw RelationException("Кафедра ссылается на несуществующий факультет ID=" + std::to_string(facId));
 
                 data.departments.push_back(
                     std::make_shared<Department>(tokens[1], data.faculties[facId])
@@ -160,7 +160,7 @@ void StorageManager::loadState(const std::string& filename, UniversityData& data
                 std::weak_ptr<Faculty> facWeak;
                 if (facId != -1) {
                     if (facId < 0 || facId >= (int)data.faculties.size())
-                        throw InvalidDataException("Участник ссылается на несуществующий факультет ID=" + std::to_string(facId));
+                        throw RelationException("Участник ссылается на несуществующий факультет ID=" + std::to_string(facId));
                     facWeak = data.faculties[facId];
                 }
 
@@ -193,9 +193,9 @@ void StorageManager::loadState(const std::string& filename, UniversityData& data
                     int subjId = std::stoi(tokens[5]);
 
                     if (deptId < 0 || deptId >= (int)data.departments.size())
-                        throw InvalidDataException("Преподаватель ссылается на несуществующую кафедру ID=" + std::to_string(deptId));
+                        throw RelationException("Преподаватель ссылается на несуществующую кафедру ID=" + std::to_string(deptId));
                     if (subjId < 0 || subjId >= (int)data.subjects.size())
-                        throw InvalidDataException("Преподаватель ссылается на несуществующий предмет ID=" + std::to_string(subjId));
+                        throw RelationException("Преподаватель ссылается на несуществующий предмет ID=" + std::to_string(subjId));
 
                     auto teacher = std::make_shared<Teacher>(
                         std::stoi(tokens[1]), tokens[2], facWeak,
