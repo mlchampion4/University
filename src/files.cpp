@@ -5,9 +5,9 @@
 #include <ctime>
 
 std::string StorageManager::trim(const std::string& str) {
-    size_t first = str.find_first_not_of(" \t\n\r");
+    const size_t first = str.find_first_not_of(" \t\n\r");
     if (std::string::npos == first) return "";
-    size_t last = str.find_last_not_of(" \t\n\r");
+    const size_t last = str.find_last_not_of(" \t\n\r");
     return str.substr(first, (last - first + 1));
 }
 
@@ -21,91 +21,148 @@ std::vector<std::string> StorageManager::split(const std::string& str, char deli
     return tokens;
 }
 
+std::string StorageManager::join(const std::vector<unsigned int>& values, char sep) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < values.size(); ++i) {
+        oss << values[i];
+        if (i + 1 < values.size()) oss << sep;
+    }
+    return oss.str();
+}
+
+template <typename T>
+static int indexOfPtr(const std::vector<std::shared_ptr<T>>& vec,
+                      const std::shared_ptr<T>& target)
+{
+    if (!target) return -1;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        if (vec[i] == target) return static_cast<int>(i);
+    }
+    return -1;
+}
+
+int StorageManager::parseIndexOrThrow(const std::string& token, int limit,
+                                      const std::string& entity)
+{
+    int idx = std::stoi(token);
+    if (idx < 0 || idx >= limit) {
+        throw RelationException(entity + " ссылается на несуществующий ID=" + token);
+    }
+    return idx;
+}
+
+std::shared_ptr<Faculty> StorageManager::resolveFaculty(const UniversityData& data, int idx) {
+    return data.faculties[parseIndexOrThrow(std::to_string(idx),
+                                            (int)data.faculties.size(), "Факультет")];
+}
+
+std::weak_ptr<Faculty> StorageManager::resolveFacultyWeak(const UniversityData& data, int idx) {
+    if (idx == -1) return {};
+    return resolveFaculty(data, idx);
+}
+
+std::shared_ptr<Department> StorageManager::resolveDepartment(const UniversityData& data, int idx) {
+    return data.departments[parseIndexOrThrow(std::to_string(idx),
+                                              (int)data.departments.size(), "Кафедра")];
+}
+
+std::shared_ptr<Subject> StorageManager::resolveSubject(const UniversityData& data, int idx) {
+    return data.subjects[parseIndexOrThrow(std::to_string(idx),
+                                           (int)data.subjects.size(), "Предмет")];
+}
+
 void StorageManager::saveState(const std::string& filename, const UniversityData& data) {
     std::ofstream ofs(filename);
     if (!ofs.is_open()) {
         throw InvalidOperationException("Не удалось открыть файл для записи: " + filename);
     }
 
-    ofs << "[FACULTIES]\n";
+    saveFaculties(ofs, data);
+    saveSubjects(ofs, data);
+    saveDepartments(ofs, data);
+    saveMembers(ofs, data);
+
+    ofs.close();
+    std::cout << "Данные успешно сохранены в " << filename << std::endl;
+}
+
+void StorageManager::saveFaculties(std::ofstream& ofs, const UniversityData& data) {
+    ofs << SEC_FACULTIES << "\n";
     for (size_t i = 0; i < data.faculties.size(); ++i) {
-        auto& f = data.faculties[i];
+        const auto& f = data.faculties[i];
         ofs << i << "|" << f->getFacultyName() << "|" << f->getMaxStudentsCount() << "\n";
     }
+}
 
-    ofs << "[SUBJECTS]\n";
+void StorageManager::saveSubjects(std::ofstream& ofs, const UniversityData& data) {
+    ofs << SEC_SUBJECTS << "\n";
     for (size_t i = 0; i < data.subjects.size(); ++i) {
-        auto& s = data.subjects[i];
+        const auto& s = data.subjects[i];
         ofs << i << "|" << s->getSubjectName() << "|" << s->getHours()
             << "|" << static_cast<int>(s->getControlType()) << "\n";
     }
+}
 
-    ofs << "[DEPARTMENTS]\n";
+void StorageManager::saveDepartments(std::ofstream& ofs, const UniversityData& data) {
+    ofs << SEC_DEPARTMENTS << "\n";
     for (size_t i = 0; i < data.departments.size(); ++i) {
-        auto& d = data.departments[i];
-        int facIdx = -1;
-        auto facPtr = d->getFaculty();
-        for (size_t j = 0; j < data.faculties.size(); ++j) {
-            if (data.faculties[j] == facPtr) { facIdx = j; break; }
-        }
+        const auto& d = data.departments[i];
+        const int facIdx = indexOfPtr(data.faculties, d->getFaculty());
         ofs << i << "|" << d->getDepartmentName() << "|" << facIdx << "\n";
     }
-    
-    ofs << "[MEMBERS]\n";
+}
+
+void StorageManager::saveMembers(std::ofstream& ofs, const UniversityData& data) {
+    ofs << SEC_MEMBERS << "\n";
     for (const auto& m : data.members) {
         if (!m) continue;
 
         int facIdx = -1;
-        auto facWeak = m->getFaculty();
-        if (auto facShared = facWeak.lock()) {
-            for (size_t j = 0; j < data.faculties.size(); ++j) {
-                if (data.faculties[j] == facShared) { facIdx = j; break; }
-            }
+        if (auto facShared = m->getFaculty().lock()) {
+            facIdx = indexOfPtr(data.faculties, facShared);
         }
 
-        std::string type = m->getType();
+        const std::string type = m->getType();
 
-        if (type == "Student") {
-            auto s = std::dynamic_pointer_cast<Student>(m);
-            ofs << "Student|" << s->getId() << "|" << s->getFullName() << "|" << facIdx << "|"
-                << s->getStudentNumber() << "|" << s->getGroupNumber() << "|"
-                << s->getMaxHoursPerWeek() << "|" << s->getHours() << "|";
-
-            auto marks = s->getMarks();
-            for (size_t k = 0; k < marks.size(); ++k) {
-                ofs << marks[k] << (k == marks.size() - 1 ? "" : ",");
-            }
-            ofs << "\n";
-        }
-        else if (type == "Teacher") {
-            auto t = std::dynamic_pointer_cast<Teacher>(m);
-
-            int deptIdx = -1;
-            if (auto d = t->getDepartment()) {
-                for (size_t j = 0; j < data.departments.size(); ++j) {
-                    if (data.departments[j] == d) { deptIdx = j; break; }
-                }
-            }
-            int subjIdx = -1;
-            if (auto s = t->getSubject()) {
-                for (size_t j = 0; j < data.subjects.size(); ++j) {
-                    if (data.subjects[j] == s) { subjIdx = j; break; }
-                }
-            }
-
-            ofs << "Teacher|" << t->getId() << "|" << t->getFullName() << "|" << facIdx << "|"
-                << deptIdx << "|" << subjIdx << "|"
-                << t->getMaxTeachingLoad() << "|" << t->getTeachingLoad() << "\n";
-        }
-        else if (type == "Administrator") {
-            auto a = std::dynamic_pointer_cast<Administrator>(m);
-            ofs << "Administrator|" << a->getId() << "|" << a->getFullName() << "|" << facIdx << "|"
-                << a->getPosition() << "|" << a->getManagedPeople() << "\n";
+        if (type == TYPE_STUDENT) {
+            saveStudent(ofs, std::dynamic_pointer_cast<Student>(m), facIdx);
+        } else if (type == TYPE_TEACHER) {
+            saveTeacher(ofs, std::dynamic_pointer_cast<Teacher>(m), facIdx, data);
+        } else if (type == TYPE_ADMIN) {
+            saveAdministrator(ofs, std::dynamic_pointer_cast<Administrator>(m), facIdx);
         }
     }
+}
 
-    ofs.close();
-    std::cout << "Данные успешно сохранены в " << filename << std::endl;
+void StorageManager::saveStudent(std::ofstream& ofs, const std::shared_ptr<Student>& s, int facIdx) {
+    ofs << TYPE_STUDENT << "|" << s->getId() << "|" << s->getFullName() << "|" << facIdx << "|"
+        << s->getStudentNumber() << "|" << s->getGroupNumber() << "|"
+        << s->getMaxHoursPerWeek() << "|" << s->getHours() << "|"
+        << join(s->getMarks(), ',') << "\n";
+}
+
+void StorageManager::saveTeacher(std::ofstream& ofs, const std::shared_ptr<Teacher>& t,
+                                 int facIdx, const UniversityData& data)
+{
+    int deptIdx = -1;
+    if (auto d = t->getDepartment()) {
+        deptIdx = indexOfPtr(data.departments, d);
+    }
+    int subjIdx = -1;
+    if (auto s = t->getSubject()) {
+        subjIdx = indexOfPtr(data.subjects, s);
+    }
+
+    ofs << TYPE_TEACHER << "|" << t->getId() << "|" << t->getFullName() << "|" << facIdx << "|"
+        << deptIdx << "|" << subjIdx << "|"
+        << t->getMaxTeachingLoad() << "|" << t->getTeachingLoad() << "\n";
+}
+
+void StorageManager::saveAdministrator(std::ofstream& ofs,
+                                       const std::shared_ptr<Administrator>& a, int facIdx)
+{
+    ofs << TYPE_ADMIN << "|" << a->getId() << "|" << a->getFullName() << "|" << facIdx << "|"
+        << a->getPosition() << "|" << a->getManagedPeople() << "\n";
 }
 
 void StorageManager::loadState(const std::string& filename, UniversityData& data) {
@@ -124,105 +181,98 @@ void StorageManager::loadState(const std::string& filename, UniversityData& data
         if (line.empty()) continue;
         if (line[0] == '[') { currentSection = line; continue; }
 
-        auto tokens = split(line, '|');
+        const auto tokens = split(line, '|');
 
         try {
-            if (currentSection == "[FACULTIES]") {
-                data.faculties.push_back(
-                    std::make_shared<Faculty>(tokens[1], std::stoul(tokens[2]))
-                );
-            }
-
-            else if (currentSection == "[SUBJECTS]") {
-                data.subjects.push_back(
-                    std::make_shared<Subject>(
-                        tokens[1],
-                        std::stoul(tokens[2]),
-                        static_cast<ControlType>(std::stoi(tokens[3]))
-                    )
-                );
-            }
-
-            else if (currentSection == "[DEPARTMENTS]") {
-                int facId = std::stoi(tokens[2]);
-                if (facId < 0 || facId >= (int)data.faculties.size())
-                    throw RelationException("Кафедра ссылается на несуществующий факультет ID=" + std::to_string(facId));
-
-                data.departments.push_back(
-                    std::make_shared<Department>(tokens[1], data.faculties[facId])
-                );
-            }
-
-            else if (currentSection == "[MEMBERS]") {
-                const std::string& type = tokens[0];
-                int facId = std::stoi(tokens[3]);
-
-                std::weak_ptr<Faculty> facWeak;
-                if (facId != -1) {
-                    if (facId < 0 || facId >= (int)data.faculties.size())
-                        throw RelationException("Участник ссылается на несуществующий факультет ID=" + std::to_string(facId));
-                    facWeak = data.faculties[facId];
-                }
-
-                if (type == "Student") {
-                    auto student = std::make_shared<Student>(
-                        tokens[2], facWeak, tokens[4], tokens[5], std::stoul(tokens[6])
-                    );
-
-                    if (tokens.size() > 7 && !tokens[7].empty()) {
-                        unsigned int currentHours = std::stoul(tokens[7]);
-                        if (currentHours != std::stoul(tokens[6])) {
-                            student->setHours(currentHours);
-                        }
-                    }
-
-                    if (tokens.size() > 8 && !tokens[8].empty()) {
-                        std::vector<unsigned int> marks;
-                        for (const auto& ms : split(tokens[8], ',')) {
-                            if (!ms.empty()) marks.push_back(std::stoul(ms));
-                        }
-                        student->setMarks(marks);
-                    }
-
-                    data.members.add(student);
-                    if (auto f = facWeak.lock()) *f += student;
-                }
-
-                else if (type == "Teacher") {
-                    int deptId = std::stoi(tokens[4]);
-                    int subjId = std::stoi(tokens[5]);
-
-                    if (deptId < 0 || deptId >= (int)data.departments.size())
-                        throw RelationException("Преподаватель ссылается на несуществующую кафедру ID=" + std::to_string(deptId));
-                    if (subjId < 0 || subjId >= (int)data.subjects.size())
-                        throw RelationException("Преподаватель ссылается на несуществующий предмет ID=" + std::to_string(subjId));
-
-                    auto teacher = std::make_shared<Teacher>(
-                        std::stoi(tokens[1]), tokens[2], facWeak,
-                        data.departments[deptId], data.subjects[subjId],
-                        std::stoi(tokens[6])
-                    );
-                    int currentLoad = std::stoi(tokens[7]);
-                    if (currentLoad > 0) teacher->applyEffect(currentLoad);
-
-                    data.members.add(teacher);
-                    data.departments[deptId]->addTeacher(teacher);
-                }
-
-                else if (type == "Administrator") {
-                    auto admin = std::make_shared<Administrator>(
-                        std::stoi(tokens[1]), tokens[2], facWeak,
-                        tokens[4], std::stoi(tokens[5])
-                    );
-                    data.members.add(admin);
-                }
-            }
+            if      (currentSection == SEC_FACULTIES)   loadFacultyLine(data, tokens);
+            else if (currentSection == SEC_SUBJECTS)    loadSubjectLine(data, tokens);
+            else if (currentSection == SEC_DEPARTMENTS) loadDepartmentLine(data, tokens);
+            else if (currentSection == SEC_MEMBERS)     loadMemberLine(data, tokens);
         } catch (const std::exception& e) {
             std::cerr << "Ошибка при загрузке строки: " << line
                       << "\nПричина: " << e.what() << std::endl;
             throw;
         }
     }
+}
+
+void StorageManager::loadFacultyLine(UniversityData& data, const std::vector<std::string>& t) {
+    data.faculties.push_back(std::make_shared<Faculty>(t[1], std::stoul(t[2])));
+}
+
+void StorageManager::loadSubjectLine(UniversityData& data, const std::vector<std::string>& t) {
+    data.subjects.push_back(std::make_shared<Subject>(
+        t[1], std::stoul(t[2]), static_cast<ControlType>(std::stoi(t[3]))
+    ));
+}
+
+void StorageManager::loadDepartmentLine(UniversityData& data, const std::vector<std::string>& t) {
+    auto fac = resolveFaculty(data, std::stoi(t[2]));
+    data.departments.push_back(std::make_shared<Department>(t[1], fac));
+}
+
+void StorageManager::loadMemberLine(UniversityData& data, const std::vector<std::string>& t) {
+    const std::string& type = t[0];
+    if      (type == TYPE_STUDENT) loadStudent(data, t);
+    else if (type == TYPE_TEACHER) loadTeacher(data, t);
+    else if (type == TYPE_ADMIN)   loadAdministrator(data, t);
+}
+
+void StorageManager::loadStudent(UniversityData& data, const std::vector<std::string>& t) {
+    const int facId = std::stoi(t[3]);
+    auto facWeak = resolveFacultyWeak(data, facId);
+
+    auto student = std::make_shared<Student>(
+        t[2], facWeak, t[4], t[5], std::stoul(t[6])
+    );
+
+    if (t.size() > 7 && !t[7].empty()) {
+        const unsigned int currentHours = std::stoul(t[7]);
+        if (currentHours != std::stoul(t[6])) {
+            student->setHours(currentHours);
+        }
+    }
+
+    if (t.size() > 8 && !t[8].empty()) {
+        std::vector<unsigned int> marks;
+        for (const auto& ms : split(t[8], ',')) {
+            if (!ms.empty()) marks.push_back(std::stoul(ms));
+        }
+        student->setMarks(marks);
+    }
+
+    data.members.add(student);
+    if (auto f = facWeak.lock()) *f += student;
+}
+
+void StorageManager::loadTeacher(UniversityData& data, const std::vector<std::string>& t) {
+    const int facId  = std::stoi(t[3]);
+    const int deptId = std::stoi(t[4]);
+    const int subjId = std::stoi(t[5]);
+
+    auto facWeak = resolveFacultyWeak(data, facId);
+    auto dept    = resolveDepartment(data, deptId);
+    auto subj    = resolveSubject(data, subjId);
+
+    auto teacher = std::make_shared<Teacher>(
+        std::stoi(t[1]), t[2], facWeak, dept, subj, std::stoi(t[6])
+    );
+
+    const int currentLoad = std::stoi(t[7]);
+    if (currentLoad > 0) teacher->applyEffect(currentLoad);
+
+    data.members.add(teacher);
+    dept->addTeacher(teacher);
+}
+
+void StorageManager::loadAdministrator(UniversityData& data, const std::vector<std::string>& t) {
+    const int facId = std::stoi(t[3]);
+    auto facWeak = resolveFacultyWeak(data, facId);
+
+    auto admin = std::make_shared<Administrator>(
+        std::stoi(t[1]), t[2], facWeak, t[4], std::stoi(t[5])
+    );
+    data.members.add(admin);
 }
 
 void StorageManager::logAction(const std::string& logFilename, const std::string& action) {
@@ -238,7 +288,6 @@ void StorageManager::logAction(const std::string& logFilename, const std::string
     std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeInfo);
 
     ofs << "[" << buf << "] " << action << "\n";
-    ofs.close();
 }
 
 void StorageManager::generateReport(const std::string& reportFilename, const UniversityData& data) {
@@ -249,20 +298,34 @@ void StorageManager::generateReport(const std::string& reportFilename, const Uni
 
     ofs << "=== ОТЧЁТ О СОСТОЯНИИ СИСТЕМЫ УНИВЕРСИТЕТА ===\n\n";
 
+    reportFaculties(ofs, data);
+    reportDepartments(ofs, data);
+    reportSubjects(ofs, data);
+    reportMembers(ofs, data);
+
+    ofs.close();
+    std::cout << "Отчёт сохранён в " << reportFilename << std::endl;
+}
+
+void StorageManager::reportFaculties(std::ofstream& ofs, const UniversityData& data) {
     ofs << "--- ФАКУЛЬТЕТЫ ---\n";
     for (const auto& f : data.faculties) {
         ofs << "Факультет: " << f->getFacultyName() << "\n";
         ofs << "  Макс. студентов: " << f->getMaxStudentsCount() << "\n";
     }
     ofs << "\n";
+}
 
+void StorageManager::reportDepartments(std::ofstream& ofs, const UniversityData& data) {
     ofs << "--- КАФЕДРЫ ---\n";
     for (const auto& d : data.departments) {
         ofs << "Кафедра: " << d->getDepartmentName()
             << " (Факультет: " << d->getFaculty()->getFacultyName() << ")\n";
     }
     ofs << "\n";
+}
 
+void StorageManager::reportSubjects(std::ofstream& ofs, const UniversityData& data) {
     ofs << "--- ПРЕДМЕТЫ ---\n";
     for (const auto& s : data.subjects) {
         ofs << "Предмет: " << s->getSubjectName()
@@ -270,52 +333,60 @@ void StorageManager::generateReport(const std::string& reportFilename, const Uni
             << " | Контроль: " << static_cast<int>(s->getControlType()) << "\n";
     }
     ofs << "\n";
+}
 
+void StorageManager::reportMembers(std::ofstream& ofs, const UniversityData& data) {
     ofs << "--- СОТРУДНИКИ И СТУДЕНТЫ ---\n";
     for (const auto& m : data.members) {
         if (!m) continue;
 
-        ofs << "Тип: " << m->getType() << "\n";
-
-        if (m->getType() == "Student") {
-            auto s = std::dynamic_pointer_cast<Student>(m);
-            ofs << "  Номер студ. билета: " << s->getStudentNumber() << "\n";
-        } else {
-            ofs << "  ID: " << m->getId() << "\n";
-        }
-
-        ofs << "  ФИО: " << m->getFullName() << "\n";
-
-        auto fac = m->getFaculty().lock();
-        ofs << "  Факультет: " << (fac ? fac->getFacultyName() : "Нет") << "\n";
-
-        std::string type = m->getType();
-        if (type == "Student") {
-            auto s = std::dynamic_pointer_cast<Student>(m);
-            ofs << "  Группа: " << s->getGroupNumber() << "\n";
-            ofs << "  Часы: " << s->getHours() << " / " << s->getMaxHoursPerWeek() << "\n";
-            ofs << "  Средний балл: " << s->calculateMetric() << "\n";
-            ofs << "  Оценки: ";
-            for (auto mark : s->getMarks()) ofs << mark << " ";
-                ofs << "\n";
-        }
-        else if (type == "Teacher") {
-            auto t = std::dynamic_pointer_cast<Teacher>(m);
-            auto d = t->getDepartment();
-            auto s = t->getSubject();
-            ofs << "  Кафедра: " << (d ? d->getDepartmentName() : "Нет") << "\n";
-            ofs << "  Предмет: " << (s ? s->getSubjectName() : "Нет") << "\n";
-            ofs << "  Нагрузка: " << t->getTeachingLoad()
-                << " / " << t->getMaxTeachingLoad() << "\n";
-        }
-        else if (type == "Administrator") {
-            auto a = std::dynamic_pointer_cast<Administrator>(m);
-            ofs << "  Должность: " << a->getPosition() << "\n";
-            ofs << "  Подчинённых: " << a->getManagedPeople() << "\n";
-        }
-        ofs << "\n";
+        const std::string type = m->getType();
+        if      (type == TYPE_STUDENT) reportStudent(ofs, std::dynamic_pointer_cast<Student>(m));
+        else if (type == TYPE_TEACHER) reportTeacher(ofs, std::dynamic_pointer_cast<Teacher>(m));
+        else if (type == TYPE_ADMIN)   reportAdministrator(ofs, std::dynamic_pointer_cast<Administrator>(m));
     }
+}
 
-    ofs.close();
-    std::cout << "Отчёт сохранён в " << reportFilename << std::endl;
+void StorageManager::reportStudent(std::ofstream& ofs, const std::shared_ptr<Student>& s) {
+    ofs << "Тип: " << s->getType() << "\n";
+    ofs << "  Номер студ. билета: " << s->getStudentNumber() << "\n";
+    ofs << "  ФИО: " << s->getFullName() << "\n";
+
+    auto fac = s->getFaculty().lock();
+    ofs << "  Факультет: " << (fac ? fac->getFacultyName() : "Нет") << "\n";
+
+    ofs << "  Группа: " << s->getGroupNumber() << "\n";
+    ofs << "  Часы: " << s->getHours() << " / " << s->getMaxHoursPerWeek() << "\n";
+    ofs << "  Средний балл: " << s->calculateMetric() << "\n";
+    ofs << "  Оценки: ";
+    for (auto mark : s->getMarks()) ofs << mark << " ";
+    ofs << "\n\n";
+}
+
+void StorageManager::reportTeacher(std::ofstream& ofs, const std::shared_ptr<Teacher>& t) {
+    ofs << "Тип: " << t->getType() << "\n";
+    ofs << "  ID: " << t->getId() << "\n";
+    ofs << "  ФИО: " << t->getFullName() << "\n";
+
+    auto fac = t->getFaculty().lock();
+    ofs << "  Факультет: " << (fac ? fac->getFacultyName() : "Нет") << "\n";
+
+    auto d = t->getDepartment();
+    auto s = t->getSubject();
+    ofs << "  Кафедра: " << (d ? d->getDepartmentName() : "Нет") << "\n";
+    ofs << "  Предмет: " << (s ? s->getSubjectName() : "Нет") << "\n";
+    ofs << "  Нагрузка: " << t->getTeachingLoad()
+        << " / " << t->getMaxTeachingLoad() << "\n\n";
+}
+
+void StorageManager::reportAdministrator(std::ofstream& ofs, const std::shared_ptr<Administrator>& a) {
+    ofs << "Тип: " << a->getType() << "\n";
+    ofs << "  ID: " << a->getId() << "\n";
+    ofs << "  ФИО: " << a->getFullName() << "\n";
+
+    auto fac = a->getFaculty().lock();
+    ofs << "  Факультет: " << (fac ? fac->getFacultyName() : "Нет") << "\n";
+
+    ofs << "  Должность: " << a->getPosition() << "\n";
+    ofs << "  Подчинённых: " << a->getManagedPeople() << "\n\n";
 }
