@@ -4,10 +4,9 @@
 #include <vector>
 #include <map>
 #include <set>
-#include <algorithm>
-#include <numeric>
+#include <string>
 #include <memory>
-#include <iomanip>
+#include <utility>
 #include "faculty.h"
 #include "student.h"
 #include "teacher.h"
@@ -16,15 +15,21 @@
 
 class UniversityAnalytics {
 public:
-    static void groupStudentsByGroup(const Collection<UniversityMember>& members);
+    static std::map<std::string, std::vector<std::shared_ptr<Student>>>
+    groupStudentsByGroup(const Collection<UniversityMember>& members);
 
-    static void findTopStudents(const Collection<UniversityMember>& members, size_t topN);
+    static std::vector<std::shared_ptr<Student>>
+    findTopStudents(const Collection<UniversityMember>& members, size_t topN);
 
-    static void countTeachersByLoad(const Collection<UniversityMember>& members, int minLoad);
+    static size_t
+    countTeachersByLoad(const Collection<UniversityMember>& members, int minLoad);
 
-    static void findMinMaxMetrics(const Collection<UniversityMember>& members);
+    static std::pair<std::shared_ptr<Student>, std::shared_ptr<Student>>
+    findMinMaxMetrics(const Collection<UniversityMember>& members);
 
-    static void listUniqueSubjects(const Collection<UniversityMember>& members);
+    static std::set<std::string>
+    listUniqueSubjects(const Collection<UniversityMember>& members);
 
-    static void calculateAverageLoad(const Collection<UniversityMember>& members);
+    static std::pair<double, double>
+    calculateAverageLoad(const Collection<UniversityMember>& members);
 };

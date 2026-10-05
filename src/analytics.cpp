@@ -4,17 +4,15 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
-#include <iomanip>
-#include "subject.h" 
+#include "subject.h"
 #include "student.h"
 #include "teacher.h"
 #include "admin.h"
 #include "faculty.h"
 #include "collection.h"
 
-void UniversityAnalytics::groupStudentsByGroup(const Collection<UniversityMember>& members) {
-    std::cout << "\n--- Группировка студентов по группам ---\n";
-    
+std::map<std::string, std::vector<std::shared_ptr<Student>>>
+UniversityAnalytics::groupStudentsByGroup(const Collection<UniversityMember>& members) {
     std::map<std::string, std::vector<std::shared_ptr<Student>>> groups;
 
     for (const auto& m : members) {
@@ -24,17 +22,11 @@ void UniversityAnalytics::groupStudentsByGroup(const Collection<UniversityMember
         }
     }
 
-    std::for_each(groups.begin(), groups.end(), [](const auto& pair) {
-        std::cout << "Группа " << pair.first << " (Студентов: " << pair.second.size() << "):\n";
-        for (const auto& s : pair.second) {
-            std::cout << "  - " << s->getFullName() << " (Балл: " << s->calculateMetric() << ")\n";
-        }
-    });
+    return groups;
 }
 
-void UniversityAnalytics::findTopStudents(const Collection<UniversityMember>& members, size_t topN) {
-    std::cout << "\n--- Топ " << topN << " студентов по успеваемости ---\n";
-
+std::vector<std::shared_ptr<Student>>
+UniversityAnalytics::findTopStudents(const Collection<UniversityMember>& members, size_t topN) {
     std::vector<std::shared_ptr<Student>> students;
 
     std::for_each(members.begin(), members.end(),
@@ -51,89 +43,76 @@ void UniversityAnalytics::findTopStudents(const Collection<UniversityMember>& me
             return a->calculateMetric() > b->calculateMetric();
         });
 
-    size_t count = 0;
-    for (const auto& s : students) {
-        if (count++ >= topN) break;
-        std::cout << count << ". " << s->getFullName() 
-                  << " | Группа: " << s->getGroupNumber() 
-                  << " | Балл: " << s->calculateMetric() << "\n";
+    if (students.size() > topN) {
+        students.resize(topN);
     }
+
+    return students;
 }
 
-void UniversityAnalytics::countTeachersByLoad(const Collection<UniversityMember>& members, int minLoad) {
-    std::cout << "\n--- Преподаватели с нагрузкой > " << minLoad << " ---\n";
-
-    auto count = std::count_if(members.begin(), members.end(),
+size_t UniversityAnalytics::countTeachersByLoad(const Collection<UniversityMember>& members, int minLoad) {
+    return std::count_if(members.begin(), members.end(),
         [minLoad](const std::shared_ptr<UniversityMember>& m) {
             if (!m || m->getType() != "Teacher") return false;
             auto t = std::dynamic_pointer_cast<Teacher>(m);
             return t->getTeachingLoad() > minLoad;
         });
-
-    std::cout << "Найдено преподавателей: " << count << "\n";
 }
 
-void UniversityAnalytics::findMinMaxMetrics(const Collection<UniversityMember>& members) {
-    std::cout << "\n--- Мин/Макс метрики ---\n";
+std::pair<std::shared_ptr<Student>, std::shared_ptr<Student>>
+UniversityAnalytics::findMinMaxMetrics(const Collection<UniversityMember>& members) {
+    std::shared_ptr<Student> minStudent = nullptr;
+    std::shared_ptr<Student> maxStudent = nullptr;
 
-    auto minIt = std::min_element(members.begin(), members.end(),
-        [](const std::shared_ptr<UniversityMember>& a, const std::shared_ptr<UniversityMember>& b) {
-            if (a->getType() != "Student" || b->getType() != "Student") return false;
-            return a->calculateMetric() < b->calculateMetric();
-        });
-
-    auto maxIt = std::max_element(members.begin(), members.end(),
-        [](const std::shared_ptr<UniversityMember>& a, const std::shared_ptr<UniversityMember>& b) {
-            if (a->getType() != "Student" || b->getType() != "Student") return false;
-            return a->calculateMetric() < b->calculateMetric();
-        });
-
-    if (minIt != members.end() && (*minIt)->getType() == "Student") {
-        std::cout << "Мин. балл: " << (*minIt)->getFullName() << " (" << (*minIt)->calculateMetric() << ")\n";
-    }
-    if (maxIt != members.end() && (*maxIt)->getType() == "Student") {
-        std::cout << "Макс. балл: " << (*maxIt)->getFullName() << " (" << (*maxIt)->calculateMetric() << ")\n";
-    }
-}
-
-void UniversityAnalytics::listUniqueSubjects(const Collection<UniversityMember>& members) {
-    std::cout << "\n--- Уникальные предметы преподавателей ---\n";
-    std::set<std::string> subjects;
-
-    std::for_each(members.begin(), members.end(), [&subjects](const std::shared_ptr<UniversityMember>& m) {
-        if (m && m->getType() == "Teacher") {
-            auto t = std::dynamic_pointer_cast<Teacher>(m);
-            if (t->getSubject()) {
-                subjects.insert(std::string(t->getSubject()->getSubjectName()));
+    for (const auto& m : members) {
+        if (m && m->getType() == "Student") {
+            auto s = std::dynamic_pointer_cast<Student>(m);
+            if (!minStudent || s->calculateMetric() < minStudent->calculateMetric()) {
+                minStudent = s;
+            }
+            if (!maxStudent || s->calculateMetric() > maxStudent->calculateMetric()) {
+                maxStudent = s;
             }
         }
-    });
-
-    for (const auto& subj : subjects) {
-        std::cout << "- " << subj << "\n";
     }
+
+    return {minStudent, maxStudent};
 }
 
-void UniversityAnalytics::calculateAverageLoad(const Collection<UniversityMember>& members) {
-    std::cout << "\n--- Средняя нагрузка преподавателей ---\n";
+std::set<std::string>
+UniversityAnalytics::listUniqueSubjects(const Collection<UniversityMember>& members) {
+    std::set<std::string> subjects;
 
+    std::for_each(members.begin(), members.end(),
+        [&subjects](const std::shared_ptr<UniversityMember>& m) {
+            if (m && m->getType() == "Teacher") {
+                auto t = std::dynamic_pointer_cast<Teacher>(m);
+                if (t->getSubject()) {
+                    subjects.insert(std::string(t->getSubject()->getSubjectName()));
+                }
+            }
+        });
+
+    return subjects;
+}
+
+std::pair<double, double>
+UniversityAnalytics::calculateAverageLoad(const Collection<UniversityMember>& members) {
     std::vector<int> loads;
 
-    std::for_each(members.begin(), members.end(), [&loads](const std::shared_ptr<UniversityMember>& m) {
-        if (m && m->getType() == "Teacher") {
-            auto t = std::dynamic_pointer_cast<Teacher>(m);
-            loads.push_back(t->getTeachingLoad());
-        }
-    });
+    std::for_each(members.begin(), members.end(),
+        [&loads](const std::shared_ptr<UniversityMember>& m) {
+            if (m && m->getType() == "Teacher") {
+                auto t = std::dynamic_pointer_cast<Teacher>(m);
+                loads.push_back(t->getTeachingLoad());
+            }
+        });
 
     if (loads.empty()) {
-        std::cout << "Нет данных о преподавателях.\n";
-        return;
+        return {0.0, 0.0};
     }
 
     double sum = std::accumulate(loads.begin(), loads.end(), 0.0);
     double avg = sum / loads.size();
-
-    std::cout << "Общая нагрузка: " << sum << "\n";
-    std::cout << "Средняя нагрузка: " << std::fixed << std::setprecision(2) << avg << "\n";
+    return {sum, avg};
 }

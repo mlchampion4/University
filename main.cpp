@@ -5,6 +5,7 @@
 #include <string>
 #include <locale>
 #include <sstream>
+#include <iomanip>
 #include "faculty.h"
 #include "department.h"
 #include "student.h"
@@ -174,7 +175,6 @@ void printMenu() {
     cout << "===========================\n";
 }
 
-
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
     int choice;
@@ -224,24 +224,74 @@ int main() {
             case 6:
                 printCurrentState();
                 break;
-            case 7:
-                UniversityAnalytics::groupStudentsByGroup(globalData.members);
+            case 7: {
+                cout << "\n--- Группировка студентов по группам ---\n";
+                auto groups = UniversityAnalytics::groupStudentsByGroup(globalData.members);
+                for (const auto& pair : groups) {
+                    cout << "Группа " << pair.first
+                         << " (Студентов: " << pair.second.size() << "):\n";
+                    for (const auto& s : pair.second) {
+                        cout << "  - " << s->getFullName()
+                             << " (Балл: " << s->calculateMetric() << ")\n";
+                    }
+                }
                 break;
-            case 8:
-                UniversityAnalytics::findTopStudents(globalData.members, 3);
+            }
+            case 8: {
+                size_t topN = 3;
+                cout << "\n--- Топ " << topN << " студентов по успеваемости ---\n";
+                auto students = UniversityAnalytics::findTopStudents(globalData.members, topN);
+                size_t count = 0;
+                for (const auto& s : students) {
+                    ++count;
+                    cout << count << ". " << s->getFullName()
+                         << " | Группа: " << s->getGroupNumber()
+                         << " | Балл: " << s->calculateMetric() << "\n";
+                }
                 break;
-            case 9:
-                UniversityAnalytics::countTeachersByLoad(globalData.members, 100);
+            }
+            case 9: {
+                int minLoad = 100;
+                cout << "\n--- Преподаватели с нагрузкой > " << minLoad << " ---\n";
+                size_t count = UniversityAnalytics::countTeachersByLoad(globalData.members, minLoad);
+                cout << "Найдено преподавателей: " << count << "\n";
                 break;
-            case 10:
-                UniversityAnalytics::findMinMaxMetrics(globalData.members);
+            }
+            case 10: {
+                cout << "\n--- Мин/Макс метрики ---\n";
+                auto [minStudent, maxStudent] = UniversityAnalytics::findMinMaxMetrics(globalData.members);
+                if (minStudent) {
+                    cout << "Мин. балл: " << minStudent->getFullName()
+                         << " (" << minStudent->calculateMetric() << ")\n";
+                }
+                if (maxStudent) {
+                    cout << "Макс. балл: " << maxStudent->getFullName()
+                         << " (" << maxStudent->calculateMetric() << ")\n";
+                }
                 break;
-            case 11:
-                UniversityAnalytics::listUniqueSubjects(globalData.members);
+            }
+            case 11: {
+                cout << "\n--- Уникальные предметы преподавателей ---\n";
+                auto subjects = UniversityAnalytics::listUniqueSubjects(globalData.members);
+                for (const auto& subj : subjects) {
+                    cout << "- " << subj << "\n";
+                }
                 break;
-            case 12:
-                UniversityAnalytics::calculateAverageLoad(globalData.members);
+            }
+            case 12: {
+                cout << "\n--- Средняя нагрузка преподавателей ---\n";
+                auto [sum, avg] = UniversityAnalytics::calculateAverageLoad(globalData.members);
+                if (sum == 0.0 && avg == 0.0) {
+                    size_t teacherCount = UniversityAnalytics::countTeachersByLoad(globalData.members, -1);
+                    if (teacherCount == 0) {
+                        cout << "Нет данных о преподавателях.\n";
+                        break;
+                    }
+                }
+                cout << "Общая нагрузка: " << sum << "\n";
+                cout << "Средняя нагрузка: " << fixed << setprecision(2) << avg << "\n";
                 break;
+            }
         }
     } while (choice != 0);
 }
