@@ -44,7 +44,7 @@
 
 ### Компиляция через терминал
 ```bash
-g++ -std=c++17 -Wall -Wextra -Iinclude  main.cpp src/department.cpp src/faculty.cpp src/student.cpp src/subject.cpp src/teacher.cpp src/admin.cpp src/member.cpp src/files.cpp src/analytics.cpp -o lab
+g++ -std=c++17 -Wall -Wextra -Iinclude main.cpp src/*.cpp -o lab
 ```
 
 ### Запуск
